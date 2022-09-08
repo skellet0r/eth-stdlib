@@ -1,4 +1,4 @@
-from ethlib.codecs.abi import datatypes
+from eth.codecs.abi import datatypes
 
 
 class Formatter:

@@ -1,7 +1,7 @@
 import re
 
-from ethlib.codecs.abi import datatypes
-from ethlib.codecs.abi.exceptions import ParseError
+from eth.codecs.abi import datatypes
+from eth.codecs.abi.exceptions import ParseError
 
 
 class Parser:
