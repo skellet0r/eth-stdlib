@@ -14,7 +14,7 @@ classifiers = [
     "Topic :: Software Development :: Libraries"
 ]
 packages = [
-    { include = "ethlib", from = "src" },
+    { include = "eth", from = "src" },
 ]
 
 [tool.poetry.dependencies]
