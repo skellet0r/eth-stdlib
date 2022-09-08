@@ -4,6 +4,7 @@ from typing import Any
 
 from eth.codecs.abi import datatypes
 from eth.codecs.abi.exceptions import EncodeError
+from eth.codecs.abi.formatter import Formatter
 
 
 class Encoder:
@@ -42,7 +43,24 @@ class Encoder:
 
     @staticmethod
     def visit_Bytes(dt: datatypes.Bytes, value: bytes) -> bytes:
-        pass
+        try:
+            assert isinstance(value, (bytes, bytearray)), "Value is not an instance of type 'bytes'"
+            length = len(value)
+            if not dt.is_dynamic:
+                assert length <= dt.size, f"Value is not {dt.size} bytes"
+        except AssertionError as e:
+            raise EncodeError(Formatter.format(dt), value, e.args[0]) from e
+
+        # dyanmic
+        if dt.is_dynamic:
+            if length % 32 != 0:
+                # pad end with null bytes up to nearest word
+                width = length + 32 - (length % 32)
+                value = value.ljust(width, b"\x00")
+            return length.to_bytes(32, "big") + value
+
+        # static
+        return value.rjust(dt.size, b"\x00").ljust(32, b"\x00")
 
     @staticmethod
     def visit_Fixed(dt: datatypes.Fixed, value: decimal.Decimal) -> bytes:
