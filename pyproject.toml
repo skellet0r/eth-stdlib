@@ -1,17 +1,20 @@
 [tool.poetry]
-name = "ethlib"
+name = "eth-stdlib"
 version = "0.1.0"
-description = "Library for Ethereum Development"
+description = "Ethereum Standard Library for Python"
 authors = ["Edward Amor <edward.amor3@gmail.com>"]
 license = "LGPL-3.0-only"
 readme = "README.md"
-repository = "https://github.com/skellet0r/ethlib"
+repository = "https://github.com/skellet0r/eth-stdlib"
 keywords = ["ethereum"]
 classifiers = [
     "Intended Audience :: Developers",
     "License :: OSI Approved :: GNU Lesser General Public License v3 (LGPLv3)",
     "Programming Language :: Python :: 3.10",
     "Topic :: Software Development :: Libraries"
+]
+packages = [
+    { include = "ethlib", from = "src" },
 ]
 
 [tool.poetry.dependencies]

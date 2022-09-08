@@ -1,1 +1,1 @@
-# ethlib
+# eth-stdlib
