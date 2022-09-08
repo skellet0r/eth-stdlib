@@ -1,6 +1,6 @@
 from collections import UserList
 
-from ethlib.singleton import Singleton, SingletonABC
+from eth.singleton import Singleton, SingletonABC
 
 
 def test_class_call_returns_same_instance():
