@@ -72,7 +72,12 @@ class Encoder:
 
     @classmethod
     def visit_String(cls, _, value: str) -> bytes:
-        pass
+        try:
+            return cls.encode(datatypes.Bytes(-1), value.encode())
+        except (AttributeError, EncodeError) as e:
+            # AttributeError - if value does not have encode method
+            # EncodeError - if value.encode() does not return a bytes | bytearray instance
+            raise EncodeError("string", value, "Value is not an instance of type 'str'")
 
     @classmethod
     def visit_Tuple(cls, dt: datatypes.Tuple, value: Sequence) -> bytes:
