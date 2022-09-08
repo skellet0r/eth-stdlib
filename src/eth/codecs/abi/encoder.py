@@ -34,7 +34,11 @@ class Encoder:
 
     @staticmethod
     def visit_Bool(_, value: bool) -> bytes:
-        pass
+        try:
+            assert isinstance(value, bool), "Value is not an instance of type 'bool'"
+            return value.to_bytes(32, "big")
+        except AssertionError as e:
+            raise EncodeError("bool", value, e.args[0]) from e
 
     @staticmethod
     def visit_Bytes(dt: datatypes.Bytes, value: bytes) -> bytes:
