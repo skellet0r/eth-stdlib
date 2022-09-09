@@ -42,11 +42,13 @@ class Encoder:
         # similar to tuples, arrays have a head and tail section
         tail = [cls.encode(dt.subtype, val) for val in value]
         if not dt.is_dynamic:
+            # static w/ static subtype
             # a static array with non-dynamic elements
             # is just the concatenation of the encoded elements of the array
             # (b"" in the case of a dynamic array)
             return b"".join(tail)
         elif dt.size == -1 and not dt.subtype.is_dynamic:
+            # dynamic w/ static subtype
             # size of array is dynamic but the elements are not dynamic
             # just return the size + the concatenation of the elements
             return len(value).to_bytes(32, "big") + b"".join(tail)
@@ -61,7 +63,9 @@ class Encoder:
         # elements will have pointers, and static elements will be in-place
         encoded = b"".join(head + tail)
         if dt.size != -1:
+            # static w/ dynamic subtype
             return encoded
+        # dynamic w/ dynamic subtype
         # dynamic arrays we return the size of the array (number of elements)
         # concatenated with the encoded elements
         return len(value).to_bytes(32, "big") + encoded
