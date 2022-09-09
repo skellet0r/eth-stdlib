@@ -1,12 +1,16 @@
 from dataclasses import dataclass
 from functools import cached_property
-from typing import Any
+from typing import Any, Literal
 
 
 class DataType:
     def accept(self, visitor: object, *args, **kwargs) -> Any:
         fn = getattr(visitor, f"visit_{self.__class__.__name__}")
         return fn(self, *args, **kwargs)
+
+    @cached_property
+    def is_dynamic(self) -> bool:
+        return False
 
 
 @dataclass(init=False, eq=False, slots=True)
@@ -21,7 +25,7 @@ class Array(DataType):
 
     @cached_property
     def is_dynamic(self) -> bool:
-        return self.size == -1 or getattr(self.subtype, "is_dynamic", False)
+        return self.size == -1 or self.subtype.is_dynamic
 
 
 @dataclass(init=False, eq=False, slots=True)
@@ -54,7 +58,7 @@ class Integer(DataType):
 @dataclass(init=False, eq=False, slots=True)
 class String(DataType):
     @cached_property
-    def is_dynamic(self) -> bool:
+    def is_dynamic(self) -> Literal[True]:
         return True
 
 
@@ -64,4 +68,4 @@ class Tuple(DataType):
 
     @cached_property
     def is_dynamic(self):
-        return any((getattr(elem, "is_dynamic", False) for elem in self.components))
+        return any((elem.is_dynamic for elem in self.components))
