@@ -68,7 +68,22 @@ class Encoder:
 
     @staticmethod
     def visit_Integer(dt: datatypes.Integer, value: int) -> bytes:
-        pass
+        # calculate type bounds
+        lo, hi = 0, 2**dt.size - 1
+        if dt.is_signed:
+            lo, hi = -(2 ** (dt.size - 1)), 2 ** (dt.size - 1) - 1
+
+        try:
+            # validate value fits in type and is of type int
+            assert lo <= value <= hi, "Value outside type bounds"
+            assert isinstance(value, int), "Value not an instance of type 'int'"
+        except AssertionError as e:
+            # value can be a float, in which case it's not valid
+            raise EncodeError(Formatter.format(dt), value, e.args[0]) from e
+        except TypeError as e:
+            raise TypeError(Formatter.format(dt), value, "Value not an instance of type 'int'")
+
+        return value.to_bytes(32, "big", signed=dt.is_signed)
 
     @classmethod
     def visit_String(cls, _, value: str) -> bytes:
