@@ -31,7 +31,35 @@ class Encoder:
 
     @classmethod
     def visit_Array(cls, dt: datatypes.Array, value: list | tuple) -> bytes:
-        pass
+        try:
+            # validate value is a list or tuple of appropriate size
+            assert isinstance(value, (list, tuple)), "Value is not a list | tuple type"
+            if dt.size != -1:
+                assert len(value) == dt.size, f"Expected value of size {dt.size}"
+        except AssertionError as e:
+            raise EncodeError(Formatter.format(dt), value, e.args[0]) from e
+
+        # similar to tuples, arrays have a head and tail section
+        tail = [cls.encode(dt.subtype, val) for val in value]
+        if not dt.is_dynamic or len(value) == 0:
+            # an empty dynamic array or a static non-dynamic array
+            # is just the concatenation of the encoded elements of the array
+            # (b"" in the case of a dynamic array)
+            return b"".join(tail)
+
+        # width of the head section
+        head_width = 32 * len(value)
+        # calculate offsets similar to tuple encoding
+        offsets = [0, *accumulate(map(len, tail))][:-1]
+        head = [(head_width + ofst).to_bytes(32, "big") for ofst in offsets]
+        # for a static array we just return the encoded array, since the dynamic
+        # elements will have pointers, and static elements will be in-place
+        encoded = b"".join(head + tail)
+        if dt.size != -1:
+            return encoded
+        # dynamic arrays we return the size of the array (number of elements)
+        # concatenated with the encoded elements
+        return len(value).to_bytes(32, "big") + encoded
 
     @staticmethod
     def visit_Bool(_, value: bool) -> bytes:
