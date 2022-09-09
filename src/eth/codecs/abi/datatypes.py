@@ -2,6 +2,8 @@ from dataclasses import dataclass
 from functools import cached_property
 from typing import Any, Literal
 
+from eth.singleton import Singleton
+
 
 class DataType:
     def accept(self, visitor: object, *args, **kwargs) -> Any:
@@ -13,9 +15,8 @@ class DataType:
         return False
 
 
-@dataclass(init=False, eq=False, slots=True)
-class Address(DataType):
-    ...
+class Address(Singleton, DataType):
+    __slots__ = ()
 
 
 @dataclass(eq=False, slots=True)
@@ -28,9 +29,8 @@ class Array(DataType):
         return self.size == -1 or self.subtype.is_dynamic
 
 
-@dataclass(init=False, eq=False, slots=True)
-class Bool:
-    ...
+class Bool(Singleton, DataType):
+    __slots__ = ()
 
 
 @dataclass(eq=False, slots=True)
@@ -55,8 +55,9 @@ class Integer(DataType):
     is_signed: bool
 
 
-@dataclass(init=False, eq=False, slots=True)
-class String(DataType):
+class String(Singleton, DataType):
+    __slots__ = ()
+
     @cached_property
     def is_dynamic(self) -> Literal[True]:
         return True
