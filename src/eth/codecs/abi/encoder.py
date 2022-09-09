@@ -1,4 +1,5 @@
 import decimal
+from itertools import accumulate
 from typing import Any
 
 from eth.codecs.abi import datatypes
@@ -124,4 +125,41 @@ class Encoder:
 
     @classmethod
     def visit_Tuple(cls, dt: datatypes.Tuple, value: list | tuple) -> bytes:
-        pass
+        try:
+            # validate value is a list or tuple of appropriate size
+            assert isinstance(value, (list, tuple)), "Value is not a list | tuple type"
+            assert len(dt.components) == len(value), f"Expected value of size {len(dt.components)}"
+        except AssertionError as e:
+            raise EncodeError(Formatter.format(dt), value, e.args[0]) from e
+
+        # since tuples are a composite type, they are composed of two sections
+        # a head (static) and tail (dynamic). The head is where static data
+        # belongs, and the tail is where dynamic data is placed. In the head
+        # there will be a pointer to the dynamic section for any component
+        # which is dynamic or is composed of dynamic subcomponents (and in the case of array/tuple)
+        head, tail = [], []
+        for component, val in zip(dt.components, value):
+            # if the component is dynamic we place the encoded output
+            # in the tail section, and later we will fill the head
+            # with the offset to the dynamic data
+            output = cls.encode(component, val)
+            head.append(None if component.is_dynamic else output)
+            tail.append(output if component.is_dynamic else b"")
+
+        # calculate the total width of the head
+        # some items like statically sized arrays are placed in the head
+        # section and take up more than 1 word
+        head_width = sum([32 if val is None else len(val) for val in head])
+        # calculate the offset from the start of the tail section for each
+        # element in the tail section. i.e. the first element starts at
+        # index 0, whereas the last element starts at index (sum(map(len, tail[:-1])))
+        # when added with the head width, we have the exact offset position of a
+        # dynamic piece of data in the tail section
+        offsets = [0, *accumulate(map(len, tail))][:-1]
+        # recompute the head, replacing None with the exact offset of the dynamic data
+        new_head = [
+            (head_width + ofst).to_bytes(32, "big") if val is None else val
+            for val, ofst in zip(head, offsets)
+        ]
+        # concatenate the head and tail together
+        return b"".join(new_head + tail)
