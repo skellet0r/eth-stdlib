@@ -108,7 +108,9 @@ class Encoder:
             # value can be a float, in which case it's not valid
             raise EncodeError(Formatter.format(dt), value, e.args[0]) from e
         except TypeError as e:
-            raise TypeError(Formatter.format(dt), value, "Value not an instance of type 'int'")
+            raise TypeError(
+                Formatter.format(dt), value, "Value not an instance of type 'int'"
+            ) from e
 
         return value.to_bytes(32, "big", signed=dt.is_signed)
 
@@ -119,7 +121,7 @@ class Encoder:
         except (AttributeError, EncodeError) as e:
             # AttributeError - if value does not have encode method
             # EncodeError - if value.encode() does not return a bytes | bytearray instance
-            raise EncodeError("string", value, "Value is not an instance of type 'str'")
+            raise EncodeError("string", value, "Value is not an instance of type 'str'") from e
 
     @classmethod
     def visit_Tuple(cls, dt: datatypes.Tuple, value: Sequence) -> bytes:
