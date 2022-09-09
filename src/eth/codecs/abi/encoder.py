@@ -41,12 +41,17 @@ class Encoder:
 
         # similar to tuples, arrays have a head and tail section
         tail = [cls.encode(dt.subtype, val) for val in value]
-        if not dt.is_dynamic or len(value) == 0:
-            # an empty dynamic array or a static non-dynamic array
+        if not dt.is_dynamic:
+            # a static array with non-dynamic elements
             # is just the concatenation of the encoded elements of the array
             # (b"" in the case of a dynamic array)
             return b"".join(tail)
+        elif dt.size == -1 and not dt.subtype.is_dynamic:
+            # size of array is dynamic but the elements are not dynamic
+            # just return the size + the concatenation of the elements
+            return len(value).to_bytes(32, "big") + b"".join(tail)
 
+        # dynamic array with dynamic components
         # width of the head section
         head_width = 32 * len(value)
         # calculate offsets similar to tuple encoding
