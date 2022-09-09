@@ -64,7 +64,34 @@ class Encoder:
 
     @staticmethod
     def visit_Fixed(dt: datatypes.Fixed, value: decimal.Decimal) -> bytes:
-        pass
+        typestr = Formatter.format(dt)
+        if not isinstance(value, decimal.Decimal):
+            raise EncodeError(typestr, value, "Value is not an instance of type 'decimal.Decimal'")
+
+        # calculate the type bounds
+        with decimal.localcontext(decimal.Context(prec=128)) as ctx:
+            scalar = decimal.Decimal(10).scaleb(-dt.precision)  # 10 ** -precision
+            lo, hi = decimal.Decimal(0), decimal.Decimal(2**dt.size - 1) * scalar
+            if dt.is_signed:
+                lo, hi = (
+                    decimal.Decimal(-(2 ** (dt.size - 1))) * scalar,
+                    decimal.Decimal(2 ** (dt.size - 1) - 1) * scalar,
+                )
+
+            try:
+                assert lo <= value <= hi, "Value outside type bounds"
+                # take care of negative values here, they imply that dt.is_signed is True
+                scaled_value = int(value.scaleb(dt.precision).to_integral_exact()) % 2**dt.size
+                # using to_integral_exact will signal Inexact if non-zero digits were rounded off
+                # https://docs.python.org/3/library/decimal.html#decimal.Decimal.to_integral_exact
+                assert not ctx.flags[decimal.Inexact], "Precision of value is greater than allowed"
+            except AssertionError as e:
+                raise EncodeError(typestr, value, e.args[0]) from e
+
+        if value < 0:  # implies dt.is_signed is True
+            width = (scaled_value.bit_length() + 7) // 8
+            return scaled_value.to_bytes(width, "big").rjust(32, b"\xff")
+        return scaled_value.to_bytes(32, "big")
 
     @staticmethod
     def visit_Integer(dt: datatypes.Integer, value: int) -> bytes:
