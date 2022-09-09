@@ -1,5 +1,4 @@
 import decimal
-from collections.abc import Sequence
 from typing import Any
 
 from eth.codecs.abi import datatypes
@@ -30,7 +29,7 @@ class Encoder:
             raise EncodeError("address", value, "Value is not 20 bytes") from e
 
     @classmethod
-    def visit_Array(cls, dt: datatypes.Array, value: Sequence) -> bytes:
+    def visit_Array(cls, dt: datatypes.Array, value: list | tuple) -> bytes:
         pass
 
     @staticmethod
@@ -124,5 +123,5 @@ class Encoder:
             raise EncodeError("string", value, "Value is not an instance of type 'str'") from e
 
     @classmethod
-    def visit_Tuple(cls, dt: datatypes.Tuple, value: Sequence) -> bytes:
+    def visit_Tuple(cls, dt: datatypes.Tuple, value: list | tuple) -> bytes:
         pass
