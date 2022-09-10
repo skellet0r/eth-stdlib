@@ -206,34 +206,44 @@ class Encoder:
         except AssertionError as e:
             raise EncodeError(Formatter.format(node), value, e.args[0]) from e
 
-        # since tuples are a composite type, they are composed of two sections
-        # a head (static) and tail (dynamic). The head is where static data
-        # belongs, and the tail is where dynamic data is placed. In the head
-        # there will be a pointer to the dynamic section for any component
-        # which is dynamic or is composed of dynamic subcomponents (and in the case of array/tuple)
-        head, tail = [], []
-        for component, val in zip(node.components, value):
-            # if the component is dynamic we place the encoded output
-            # in the tail section, and later we will fill the head
-            # with the offset to the dynamic data
-            output = cls.encode(component, val)
-            head.append(None if component.is_dynamic else output)
-            tail.append(output if component.is_dynamic else b"")
+        # there are 2 possible cases when encoding a tuple
+        # 1) all components are static
+        # 2) at least 1 component is dynamic
 
-        # calculate the total width of the head
-        # some items like statically sized arrays are placed in the head
-        # section and take up more than 1 word
-        head_width = sum([32 if val is None else len(val) for val in head])
-        # calculate the offset from the start of the tail section for each
-        # element in the tail section. i.e. the first element starts at
-        # index 0, whereas the last element starts at index (sum(map(len, tail[:-1])))
-        # when added with the head width, we have the exact offset position of a
-        # dynamic piece of data in the tail section
+        if not node.is_dynamic:
+            # case 1: return the concatentation of each encoded element
+            return b"".join([cls.encode(typ, val) for typ, val, in zip(node.components, value)])
+
+        # case 2: similar to a dynamic array, there is a static-head w/ pointers to the
+        # dynamic-tail section for dynamic elements
+        raw_head, tail = [], []
+        for typ, val in zip(node.components, value):
+            output = cls.encode(typ, val)
+            # if the element is dynamic append None to the head section (to be later replaced
+            # with a pointer), and the encoded element in the tail section
+            # if the element is static, append the encoded element in the head section,
+            # and an empty (0-width) bytes value to the tail
+            raw_head.append(None if val.is_dynamic else output)
+            tail.append(output if val.is_dynamic else b"")
+
+        # calculate the width of the static-head section
+        # since elements in the head section can be different types, they
+        # can potentially occupy more than 32 bytes (such as arrays, or tuples)
+        # so we take the sum of the length of each element (replacing None values
+        # with 32, the size of a pointer)
+        width = sum([32 if val is None else len(val) for val in raw_head])
+        # calculate each dynamic element's offset from the start of the dynamic-tail
+        # used for calculating pointers (similar to array encoding)
         offsets = [0, *accumulate(map(len, tail))][:-1]
-        # recompute the head, replacing None with the exact offset of the dynamic data
-        new_head = [
-            (head_width + ofst).to_bytes(32, "big") if val is None else val
-            for val, ofst in zip(head, offsets)
-        ]
-        # concatenate the head and tail together
-        return b"".join(new_head + tail)
+
+        # recalculate the head section with pointers this time
+        head = []
+        for val, offset in zip(raw_head, offsets):
+            if val is None:
+                # calculate and append the pointer
+                head.append((width + offset).to_bytes(32, "big"))
+            else:
+                # append the encoded value
+                head.append(val)
+
+        return b"".join(head + tail)
