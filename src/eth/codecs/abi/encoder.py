@@ -69,36 +69,39 @@ class Encoder:
         except AssertionError as e:
             raise EncodeError(Formatter.format(node), value, e.args[0]) from e
 
-        # similar to tuples, arrays have a head and tail section
+        # there are 4 possible cases when encoding an array
+        # 1) static array, w/ static elements
+        # 2) dynamic array, w/ static elements
+        # 3) static array, w/ dynamic elements
+        # 4) dynamic array, w/ dynamic elements
+
         tail = [cls.encode(node.subtype, val) for val in value]
         if not node.is_dynamic:
-            # static w/ static subtype
-            # a static array with non-dynamic elements
-            # is just the concatenation of the encoded elements of the array
-            # (b"" in the case of a dynamic array)
+            # case 1: return the concatenation of the encoded elements
             return b"".join(tail)
         elif node.size == -1 and not node.subtype.is_dynamic:
-            # dynamic w/ static subtype
-            # size of array is dynamic but the elements are not dynamic
-            # just return the size + the concatenation of the elements
+            # case 2: return the encoded size of the array concatenated with the encoded elemnts
+            # of the array concatenated
             return len(value).to_bytes(32, "big") + b"".join(tail)
 
-        # dynamic array with dynamic components
-        # width of the head section
-        head_width = 32 * len(value)
-        # calculate offsets similar to tuple encoding
+        # calculate the width of the static-head section, each element is a pointer (32 bytes)
+        width = 32 * len(value)
+        # calculate each encoded element's offset from the start of the dynamic-tail section
+        # offset[0] = 0, offset[1] = len(elem[0]), offset[2] = offset[1] + len(elem[1]), ...
+        # the last elements's offset is the sum of all previous elements' length
         offsets = [0, *accumulate(map(len, tail))][:-1]
-        head = [(head_width + ofst).to_bytes(32, "big") for ofst in offsets]
-        # for a static array we just return the encoded array, since the dynamic
-        # elements will have pointers, and static elements will be in-place
-        encoded = b"".join(head + tail)
+        # calculate the pointers, which are just the width + offset
+        head = [(width + offset).to_bytes(32, "big") for offset in offsets]
+
         if node.size != -1:
-            # static w/ dynamic subtype
-            return encoded
-        # dynamic w/ dynamic subtype
-        # dynamic arrays we return the size of the array (number of elements)
-        # concatenated with the encoded elements
-        return len(value).to_bytes(32, "big") + encoded
+            # case 3: return the concatenation of the static-head and dynamic-tail, each element in
+            # the head is a pointer to it's element in the tail
+            return b"".join(head + tail)
+
+        # case 4: similar to case 4 return the concatenation of the static-head and dynamic-tail,
+        # except also prepend the encoded size of the array. Each element is again a pointer to
+        # it's element in the tail
+        return len(value).to_bytes(32, "big") + b"".join(head + tail)
 
     @staticmethod
     def visit_Bool(_, value: bool) -> bytes:
