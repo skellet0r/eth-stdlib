@@ -24,8 +24,22 @@ from eth.codecs.abi.formatter import Formatter
 
 
 class Encoder:
+    """Ethereum ABI encoder implementing the visitor pattern."""
+
     @classmethod
     def encode(cls, node: nodes.Node, value: Any) -> bytes:
+        """Encode a value according to an ABI type.
+
+        Parameters:
+            node: The ABI type to encode the value as.
+            value: The value to be encoded.
+
+        Returns:
+            The encoded value.
+
+        Raises:
+            EncodeError: If value, or sub-sequence thereof, can't be encoded.
+        """
         return node.accept(cls, value)
 
     @staticmethod
