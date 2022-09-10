@@ -9,7 +9,7 @@ repository = "https://github.com/skellet0r/eth-stdlib"
 keywords = ["ethereum"]
 classifiers = [
     "Intended Audience :: Developers",
-    "License :: OSI Approved :: GNU Lesser General Public License v3 (LGPLv3)",
+    "License :: OSI Approved :: GNU Lesser General Public License v3 or later (LGPLv3+)",
     "Programming Language :: Python :: 3.10",
     "Topic :: Software Development :: Libraries"
 ]
