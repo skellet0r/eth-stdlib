@@ -21,5 +21,17 @@ from eth.codecs.abi.parser import Parser
 
 
 def encode(typestr: str, value: Any) -> bytes:
-    typ = Parser.parse(typestr)
-    return Encoder.encode(typ, value)
+    """Encode a value according to an ABI type string.
+
+    Parameters:
+        typestr: An ABI type string (i.e. 'uint256[]', '(uint8,bytes32)').
+        value: The value to encode.
+
+    Returns:
+        The encoded value.
+
+    Raises:
+        EncodeError: if value, or an element thereof, is not encodable.
+        ParseError: if `typestr`, or a sub-string thereof, is an invalid ABI type.
+    """
+    return Encoder.encode(Parser.parse(typestr), value)
