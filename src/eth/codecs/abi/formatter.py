@@ -14,14 +14,14 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 
-from eth.codecs.abi import datatypes
+from eth.codecs.abi import nodes
 
 
 class Formatter:
     """ABI type AST formatter utilizing the Visitor pattern."""
 
     @classmethod
-    def format(cls, dt: datatypes.DataType) -> str:
+    def format(cls, dt: nodes.Node) -> str:
         """Format an ABI type AST as a string.
 
         Returns:
@@ -35,7 +35,7 @@ class Formatter:
         return "address"
 
     @classmethod
-    def visit_Array(cls, dt: datatypes.Array) -> str:
+    def visit_Array(cls, dt: nodes.Array) -> str:
         size = "" if dt.size == -1 else f"{dt.size}"
         return f"{cls.format(dt.subtype)}[{size}]"
 
@@ -44,18 +44,18 @@ class Formatter:
         return "bool"
 
     @staticmethod
-    def visit_Bytes(dt: datatypes.Bytes) -> str:
+    def visit_Bytes(dt: nodes.Bytes) -> str:
         if dt.is_dynamic:
             return "bytes"
         return f"bytes{dt.size}"
 
     @staticmethod
-    def visit_Fixed(dt: datatypes.Fixed) -> str:
+    def visit_Fixed(dt: nodes.Fixed) -> str:
         prefix = "" if dt.is_signed else "u"
         return f"{prefix}fixed{dt.size}x{dt.precision}"
 
     @staticmethod
-    def visit_Integer(dt: datatypes.Integer) -> str:
+    def visit_Integer(dt: nodes.Integer) -> str:
         prefix = "" if dt.is_signed else "u"
         return f"{prefix}int{dt.size}"
 
@@ -64,6 +64,6 @@ class Formatter:
         return "string"
 
     @classmethod
-    def visit_Tuple(cls, dt: datatypes.Tuple) -> str:
+    def visit_Tuple(cls, dt: nodes.Tuple) -> str:
         inner = ",".join([cls.format(component) for component in dt.components])
         return f"({inner})"

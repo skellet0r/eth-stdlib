@@ -16,7 +16,7 @@
 
 import re
 
-from eth.codecs.abi import datatypes
+from eth.codecs.abi import nodes
 from eth.codecs.abi.exceptions import ParseError
 
 
@@ -35,7 +35,7 @@ class Parser:
     VALUE_PATTERN = re.compile(r"bytes(\d+)|u?(?:fixed(\d+)x(\d+)|int(\d+))")
 
     @classmethod
-    def parse(cls, typestr: str) -> datatypes.DataType:
+    def parse(cls, typestr: str) -> nodes.Node:
         """Parse a type string into a AST-like strucutre.
 
         Parameters:
@@ -50,13 +50,13 @@ class Parser:
         # simplest types to match against since they don't require regex magic
         match typestr:
             case "address":
-                return datatypes.Address()
+                return nodes.Address()
             case "bool":
-                return datatypes.Bool()
+                return nodes.Bool()
             case "bytes":
-                return datatypes.Bytes(-1)  # -1 denotes dynamic size
+                return nodes.Bytes(-1)  # -1 denotes dynamic size
             case "string":
-                return datatypes.String()
+                return nodes.String()
 
         # using fullmatch method to correctly match against the entire string
         if (mo := cls.VALUE_PATTERN.fullmatch(typestr)) is not None:
@@ -65,7 +65,7 @@ class Parser:
                 case 1:  # bytes
                     if (size := int(mo[1])) not in range(1, 33):
                         raise ParseError(typestr, f"'{size}' is not a valid byte array width")
-                    return datatypes.Bytes(size)
+                    return nodes.Bytes(size)
                 case 3:  # fixed
                     if (size := int(mo[2])) not in range(8, 264, 8):
                         raise ParseError(typestr, f"'{size}' is not a valid fixed point width")
@@ -73,11 +73,11 @@ class Parser:
                         raise ParseError(
                             typestr, f"'{precision}' is not a valid fixed point precision"
                         )
-                    return datatypes.Fixed(size, precision, typestr[0] != "u")
+                    return nodes.Fixed(size, precision, typestr[0] != "u")
                 case 4:  # integer
                     if (size := int(mo[4])) not in range(8, 264, 8):
                         raise ParseError(typestr, f"'{size}' is not a valid integer width")
-                    return datatypes.Integer(size, typestr[0] != "u")
+                    return nodes.Integer(size, typestr[0] != "u")
 
         # array
         if (mo := cls.ARRAY_PATTERN.fullmatch(typestr)) is not None:
@@ -85,7 +85,7 @@ class Parser:
             if size == 0:
                 raise ParseError(typestr, "'0' is not a valid array size")
             # recurse and parse the subtype of the array
-            return datatypes.Array(cls.parse(subtype), size)
+            return nodes.Array(cls.parse(subtype), size)
 
         # tuple
         if cls.TUPLE_PATTERN.fullmatch(typestr) is not None:
@@ -110,7 +110,7 @@ class Parser:
                 raise ParseError(typestr, "Dangling comma detected in type string")
 
             # recurse and parse components
-            return datatypes.Tuple([cls.parse(component) for component in components])
+            return nodes.Tuple([cls.parse(component) for component in components])
 
         # none of the above matching was successful, raise since we can't parse `typestr`
         raise ParseError(typestr, "ABI type not parseable")

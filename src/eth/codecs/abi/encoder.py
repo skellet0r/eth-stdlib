@@ -18,14 +18,14 @@ import decimal
 from itertools import accumulate
 from typing import Any
 
-from eth.codecs.abi import datatypes
+from eth.codecs.abi import nodes
 from eth.codecs.abi.exceptions import EncodeError
 from eth.codecs.abi.formatter import Formatter
 
 
 class Encoder:
     @classmethod
-    def encode(cls, datatype: datatypes.DataType, value: Any) -> bytes:
+    def encode(cls, datatype: nodes.Node, value: Any) -> bytes:
         return datatype.accept(cls, value)
 
     @staticmethod
@@ -46,7 +46,7 @@ class Encoder:
             raise EncodeError("address", value, "Value is not 20 bytes") from e
 
     @classmethod
-    def visit_Array(cls, dt: datatypes.Array, value: list | tuple) -> bytes:
+    def visit_Array(cls, dt: nodes.Array, value: list | tuple) -> bytes:
         try:
             # validate value is a list or tuple of appropriate size
             assert isinstance(value, (list, tuple)), "Value is not a list | tuple type"
@@ -95,7 +95,7 @@ class Encoder:
             raise EncodeError("bool", value, e.args[0]) from e
 
     @staticmethod
-    def visit_Bytes(dt: datatypes.Bytes, value: bytes) -> bytes:
+    def visit_Bytes(dt: nodes.Bytes, value: bytes) -> bytes:
         try:
             assert isinstance(value, (bytes, bytearray)), "Value is not an instance of type 'bytes'"
             length = len(value)
@@ -116,7 +116,7 @@ class Encoder:
         return value.rjust(dt.size, b"\x00").ljust(32, b"\x00")
 
     @staticmethod
-    def visit_Fixed(dt: datatypes.Fixed, value: decimal.Decimal) -> bytes:
+    def visit_Fixed(dt: nodes.Fixed, value: decimal.Decimal) -> bytes:
         typestr = Formatter.format(dt)
         if not isinstance(value, decimal.Decimal):
             raise EncodeError(typestr, value, "Value is not an instance of type 'decimal.Decimal'")
@@ -147,7 +147,7 @@ class Encoder:
         return scaled_value.to_bytes(32, "big")
 
     @staticmethod
-    def visit_Integer(dt: datatypes.Integer, value: int) -> bytes:
+    def visit_Integer(dt: nodes.Integer, value: int) -> bytes:
         # calculate type bounds
         lo, hi = 0, 2**dt.size - 1
         if dt.is_signed:
@@ -170,14 +170,14 @@ class Encoder:
     @classmethod
     def visit_String(cls, _, value: str) -> bytes:
         try:
-            return cls.encode(datatypes.Bytes(-1), value.encode())
+            return cls.encode(nodes.Bytes(-1), value.encode())
         except (AttributeError, EncodeError) as e:
             # AttributeError - if value does not have encode method
             # EncodeError - if value.encode() does not return a bytes | bytearray instance
             raise EncodeError("string", value, "Value is not an instance of type 'str'") from e
 
     @classmethod
-    def visit_Tuple(cls, dt: datatypes.Tuple, value: list | tuple) -> bytes:
+    def visit_Tuple(cls, dt: nodes.Tuple, value: list | tuple) -> bytes:
         try:
             # validate value is a list or tuple of appropriate size
             assert isinstance(value, (list, tuple)), "Value is not a list | tuple type"
