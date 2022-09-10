@@ -20,22 +20,44 @@ from typing import Any, Literal
 
 
 class DataType:
+    """ABI data type base class.
+
+    Note:
+        Visitor classes should implement the appropriate 'visit_{ClassName}' methods.
+    """
+
     def accept(self, visitor: object, *args, **kwargs) -> Any:
+        """Accept a visitor and call the appropriate visit method on it.
+
+        Returns:
+            The output of the visit method on the visitor.
+
+        Raises:
+            AttributeError: If visitor does not have the appropriate visit method required defined.
+        """
         fn = getattr(visitor, f"visit_{self.__class__.__name__}")
         return fn(self, *args, **kwargs)
 
     @cached_property
     def is_dynamic(self) -> bool:
+        """Indicates if the data type instance is considered dynamic."""
         return False
 
 
 @dataclass(init=False, eq=False, slots=True)
 class Address(DataType):
-    ...
+    """Address Data Type."""
 
 
 @dataclass(eq=False, slots=True)
 class Array(DataType):
+    """Array Data Type.
+
+    Attributes:
+        subtype: The data type of array elements.
+        size: The size of the array. -1 if the array is dynamically sized.
+    """
+
     subtype: DataType
     size: int
 
@@ -46,11 +68,17 @@ class Array(DataType):
 
 @dataclass(init=False, eq=False, slots=True)
 class Bool(DataType):
-    ...
+    """Boolean Data Type."""
 
 
 @dataclass(eq=False, slots=True)
 class Bytes(DataType):
+    """Byte Array Data Type.
+
+    Attributes:
+        size: The size of the byte array. -1 if the byte array is dynamically sized.
+    """
+
     size: int
 
     @cached_property
@@ -60,6 +88,14 @@ class Bytes(DataType):
 
 @dataclass(eq=False, slots=True)
 class Fixed(DataType):
+    """Fixed-Point Decimal Data Type.
+
+    Attributes:
+        size: The number of bits utilized by the data type.
+        precision: The number of decimal points available.
+        is_signed: True if the data type is signed, False otherwise.
+    """
+
     size: int
     precision: int
     is_signed: bool
@@ -67,12 +103,21 @@ class Fixed(DataType):
 
 @dataclass(eq=False, slots=True)
 class Integer(DataType):
+    """Integer Data Type.
+
+    Attributes:
+        size: The number of bits utilized by the data type.
+        is_signed: True if the data type is signed, False otherwise.
+    """
+
     size: int
     is_signed: bool
 
 
 @dataclass(init=False, eq=False, slots=True)
 class String(DataType):
+    """String Data Type."""
+
     @cached_property
     def is_dynamic(self) -> Literal[True]:
         return True
@@ -80,6 +125,12 @@ class String(DataType):
 
 @dataclass(eq=False, slots=True)
 class Tuple(DataType):
+    """Tuple Data Type.
+
+    Attributes:
+        components: Ordered sequence of data types which the tuple is composed of.
+    """
+
     components: list[DataType]
 
     @cached_property
