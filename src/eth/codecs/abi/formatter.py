@@ -18,14 +18,17 @@ from eth.codecs.abi import nodes
 
 
 class Formatter:
-    """ABI type AST formatter utilizing the Visitor pattern."""
+    """ABI type AST/node formatter implementing the visitor pattern."""
 
     @classmethod
     def format(cls, node: nodes.Node) -> str:
-        """Format an ABI type AST as a string.
+        """Format an ABI type AST/node as a string.
+
+        Parameters:
+            node: The node to format.
 
         Returns:
-            The ABI type AST represented in string form.
+            The ABI type AST/node represented in string form.
         """
 
         return node.accept(cls)

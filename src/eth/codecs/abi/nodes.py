@@ -58,6 +58,10 @@ class Address(Node):
 class Array(Node):
     """Array Data Type.
 
+    Parameters:
+        subtype: The data type of array elements.
+        size: The size of the array. -1 if the array is dynamically sized.
+
     Attributes:
         subtype: The data type of array elements.
         size: The size of the array. -1 if the array is dynamically sized.
@@ -80,6 +84,9 @@ class Bool(Node):
 class Bytes(Node):
     """Byte Array Data Type.
 
+    Parameters:
+        size: The size of the byte array. -1 if the byte array is dynamically sized.
+
     Attributes:
         size: The size of the byte array. -1 if the byte array is dynamically sized.
     """
@@ -95,6 +102,11 @@ class Bytes(Node):
 class Fixed(Node):
     """Fixed-Point Decimal Data Type.
 
+    Parameters:
+        size: The number of bits utilized by the data type.
+        precision: The number of decimal points available.
+        is_signed: True if the data type is signed, False otherwise.
+
     Attributes:
         size: The number of bits utilized by the data type.
         precision: The number of decimal points available.
@@ -109,6 +121,10 @@ class Fixed(Node):
 @dataclass(eq=False, slots=True)
 class Integer(Node):
     """Integer Data Type.
+
+    Parameters:
+        size: The number of bits utilized by the data type.
+        is_signed: True if the data type is signed, False otherwise.
 
     Attributes:
         size: The number of bits utilized by the data type.
@@ -131,6 +147,9 @@ class String(Node):
 @dataclass(eq=False, slots=True)
 class Tuple(Node):
     """Tuple Data Type.
+
+    Parameters:
+        components: Ordered sequence of data types which the tuple is composed of.
 
     Attributes:
         components: Ordered sequence of data types which the tuple is composed of.

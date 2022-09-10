@@ -27,6 +27,8 @@ class ParseError(ABIError):
     Parameters:
         where: The invalid type string.
         msg: Explanation of why the type string is invalid.
+        *args: Additional arguments passed to the parent class init method.
+        **kwargs: Additional keyword arguments passed to the parent class init method.
 
     Attributes:
         where: The invalid type string.
@@ -49,6 +51,8 @@ class EncodeError(ABIError):
         typestr: The type string of the type encoding was attempted for.
         value: The value that encoding was attempted for.
         msg: Explanation of why the value is invalid.
+        *args: Additional arguments passed to the parent class init method.
+        **kwargs: Additional keyword arguments passed to the parent class init method.
 
     Attributes:
         typestr: The type string of the type encoding was attempted for.
