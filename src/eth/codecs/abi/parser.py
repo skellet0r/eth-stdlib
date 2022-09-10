@@ -50,17 +50,20 @@ class Parser:
         Raises:
             ParseError: If `typestr`, or a component type string of it, is an invalid ABI type.
         """
+        # simplest types to match against since they don't require regex magic
         match typestr:
             case "address":
                 return datatypes.Address()
             case "bool":
                 return datatypes.Bool()
             case "bytes":
-                return datatypes.Bytes(-1)
+                return datatypes.Bytes(-1)  # -1 denotes dynamic size
             case "string":
                 return datatypes.String()
 
+        # using fullmatch method to correctly match against the entire string
         if (mo := cls.VALUE_PATTERN.fullmatch(typestr)) is not None:
+            # identify which type was matched, and validate it
             match mo.lastindex:
                 case 1:  # bytes
                     if (size := int(mo[1])) not in range(1, 33):
@@ -81,16 +84,18 @@ class Parser:
 
         # tuple
         if cls.TUPLE_PATTERN.fullmatch(typestr) is not None:
-            # split typestr on commas and tuples
+            # split the type string on commas while preserving any component tuples
+            # recurse and parse each component
             components = [cls.parse(typ) for typ in cls.SPLIT_PATTERN.split(typestr[1:-1]) if typ]
             return datatypes.Tuple(components)
 
         # array
         if (mo := cls.ARRAY_PATTERN.fullmatch(typestr)) is not None:
-            # -1 denotes dynamic size
-            subtype, size = mo[1], int(mo[2] or -1)
+            subtype, size = mo[1], int(mo[2] or -1)  # if mo[2] is None the array is dynamic
             if size == 0:
                 raise ParseError(typestr, "'0' is not a valid array size")
+            # recurse and parse the subtype of the array
             return datatypes.Array(cls.parse(subtype), size)
 
+        # none of the above matching was successful, raise since we can't parse `typestr`
         raise ParseError(typestr, "ABI type not parseable")
