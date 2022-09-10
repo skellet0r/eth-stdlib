@@ -25,8 +25,8 @@ from eth.codecs.abi.formatter import Formatter
 
 class Encoder:
     @classmethod
-    def encode(cls, datatype: nodes.Node, value: Any) -> bytes:
-        return datatype.accept(cls, value)
+    def encode(cls, node: nodes.Node, value: Any) -> bytes:
+        return node.accept(cls, value)
 
     @staticmethod
     def visit_Address(_, value: str) -> bytes:
@@ -46,24 +46,24 @@ class Encoder:
             raise EncodeError("address", value, "Value is not 20 bytes") from e
 
     @classmethod
-    def visit_Array(cls, dt: nodes.Array, value: list | tuple) -> bytes:
+    def visit_Array(cls, node: nodes.Array, value: list | tuple) -> bytes:
         try:
             # validate value is a list or tuple of appropriate size
             assert isinstance(value, (list, tuple)), "Value is not a list | tuple type"
-            if dt.size != -1:
-                assert len(value) == dt.size, f"Expected value of size {dt.size}"
+            if node.size != -1:
+                assert len(value) == node.size, f"Expected value of size {node.size}"
         except AssertionError as e:
-            raise EncodeError(Formatter.format(dt), value, e.args[0]) from e
+            raise EncodeError(Formatter.format(node), value, e.args[0]) from e
 
         # similar to tuples, arrays have a head and tail section
-        tail = [cls.encode(dt.subtype, val) for val in value]
-        if not dt.is_dynamic:
+        tail = [cls.encode(node.subtype, val) for val in value]
+        if not node.is_dynamic:
             # static w/ static subtype
             # a static array with non-dynamic elements
             # is just the concatenation of the encoded elements of the array
             # (b"" in the case of a dynamic array)
             return b"".join(tail)
-        elif dt.size == -1 and not dt.subtype.is_dynamic:
+        elif node.size == -1 and not node.subtype.is_dynamic:
             # dynamic w/ static subtype
             # size of array is dynamic but the elements are not dynamic
             # just return the size + the concatenation of the elements
@@ -78,7 +78,7 @@ class Encoder:
         # for a static array we just return the encoded array, since the dynamic
         # elements will have pointers, and static elements will be in-place
         encoded = b"".join(head + tail)
-        if dt.size != -1:
+        if node.size != -1:
             # static w/ dynamic subtype
             return encoded
         # dynamic w/ dynamic subtype
@@ -95,17 +95,17 @@ class Encoder:
             raise EncodeError("bool", value, e.args[0]) from e
 
     @staticmethod
-    def visit_Bytes(dt: nodes.Bytes, value: bytes) -> bytes:
+    def visit_Bytes(node: nodes.Bytes, value: bytes) -> bytes:
         try:
             assert isinstance(value, (bytes, bytearray)), "Value is not an instance of type 'bytes'"
             length = len(value)
-            if not dt.is_dynamic:
-                assert length <= dt.size, f"Value is not {dt.size} bytes"
+            if not node.is_dynamic:
+                assert length <= node.size, f"Value is not {node.size} bytes"
         except AssertionError as e:
-            raise EncodeError(Formatter.format(dt), value, e.args[0]) from e
+            raise EncodeError(Formatter.format(node), value, e.args[0]) from e
 
         # dyanmic
-        if dt.is_dynamic:
+        if node.is_dynamic:
             if length % 32 != 0:
                 # pad end with null bytes up to nearest word
                 width = length + 32 - (length % 32)
@@ -113,45 +113,47 @@ class Encoder:
             return length.to_bytes(32, "big") + value
 
         # static
-        return value.rjust(dt.size, b"\x00").ljust(32, b"\x00")
+        return value.rjust(node.size, b"\x00").ljust(32, b"\x00")
 
     @staticmethod
-    def visit_Fixed(dt: nodes.Fixed, value: decimal.Decimal) -> bytes:
-        typestr = Formatter.format(dt)
+    def visit_Fixed(node: nodes.Fixed, value: decimal.Decimal) -> bytes:
+        typestr = Formatter.format(node)
         if not isinstance(value, decimal.Decimal):
             raise EncodeError(typestr, value, "Value is not an instance of type 'decimal.Decimal'")
 
         # calculate the type bounds
         with decimal.localcontext(decimal.Context(prec=128)) as ctx:
-            scalar = decimal.Decimal(10).scaleb(-dt.precision)  # 10 ** -precision
-            lo, hi = decimal.Decimal(0), decimal.Decimal(2**dt.size - 1) * scalar
-            if dt.is_signed:
+            scalar = decimal.Decimal(10).scaleb(-node.precision)  # 10 ** -precision
+            lo, hi = decimal.Decimal(0), decimal.Decimal(2**node.size - 1) * scalar
+            if node.is_signed:
                 lo, hi = (
-                    decimal.Decimal(-(2 ** (dt.size - 1))) * scalar,
-                    decimal.Decimal(2 ** (dt.size - 1) - 1) * scalar,
+                    decimal.Decimal(-(2 ** (node.size - 1))) * scalar,
+                    decimal.Decimal(2 ** (node.size - 1) - 1) * scalar,
                 )
 
             try:
                 assert lo <= value <= hi, "Value outside type bounds"
-                # take care of negative values here, they imply that dt.is_signed is True
-                scaled_value = int(value.scaleb(dt.precision).to_integral_exact()) % 2**dt.size
+                # take care of negative values here, they imply that node.is_signed is True
+                scaled_value = (
+                    int(value.scaleb(node.precision).to_integral_exact()) % 2**node.size
+                )
                 # using to_integral_exact will signal Inexact if non-zero digits were rounded off
                 # https://docs.python.org/3/library/decimal.html#decimal.Decimal.to_integral_exact
                 assert not ctx.flags[decimal.Inexact], "Precision of value is greater than allowed"
             except AssertionError as e:
                 raise EncodeError(typestr, value, e.args[0]) from e
 
-        if value < 0:  # implies dt.is_signed is True
+        if value < 0:  # implies node.is_signed is True
             width = (scaled_value.bit_length() + 7) // 8
             return scaled_value.to_bytes(width, "big").rjust(32, b"\xff")
         return scaled_value.to_bytes(32, "big")
 
     @staticmethod
-    def visit_Integer(dt: nodes.Integer, value: int) -> bytes:
+    def visit_Integer(node: nodes.Integer, value: int) -> bytes:
         # calculate type bounds
-        lo, hi = 0, 2**dt.size - 1
-        if dt.is_signed:
-            lo, hi = -(2 ** (dt.size - 1)), 2 ** (dt.size - 1) - 1
+        lo, hi = 0, 2**node.size - 1
+        if node.is_signed:
+            lo, hi = -(2 ** (node.size - 1)), 2 ** (node.size - 1) - 1
 
         try:
             # validate value fits in type and is of type int
@@ -159,13 +161,13 @@ class Encoder:
             assert isinstance(value, int), "Value not an instance of type 'int'"
         except AssertionError as e:
             # value can be a float, in which case it's not valid
-            raise EncodeError(Formatter.format(dt), value, e.args[0]) from e
+            raise EncodeError(Formatter.format(node), value, e.args[0]) from e
         except TypeError as e:
             raise EncodeError(
-                Formatter.format(dt), value, "Value not an instance of type 'int'"
+                Formatter.format(node), value, "Value not an instance of type 'int'"
             ) from e
 
-        return value.to_bytes(32, "big", signed=dt.is_signed)
+        return value.to_bytes(32, "big", signed=node.is_signed)
 
     @classmethod
     def visit_String(cls, _, value: str) -> bytes:
@@ -177,13 +179,15 @@ class Encoder:
             raise EncodeError("string", value, "Value is not an instance of type 'str'") from e
 
     @classmethod
-    def visit_Tuple(cls, dt: nodes.Tuple, value: list | tuple) -> bytes:
+    def visit_Tuple(cls, node: nodes.Tuple, value: list | tuple) -> bytes:
         try:
             # validate value is a list or tuple of appropriate size
             assert isinstance(value, (list, tuple)), "Value is not a list | tuple type"
-            assert len(dt.components) == len(value), f"Expected value of size {len(dt.components)}"
+            assert len(node.components) == len(
+                value
+            ), f"Expected value of size {len(node.components)}"
         except AssertionError as e:
-            raise EncodeError(Formatter.format(dt), value, e.args[0]) from e
+            raise EncodeError(Formatter.format(node), value, e.args[0]) from e
 
         # since tuples are a composite type, they are composed of two sections
         # a head (static) and tail (dynamic). The head is where static data
@@ -191,7 +195,7 @@ class Encoder:
         # there will be a pointer to the dynamic section for any component
         # which is dynamic or is composed of dynamic subcomponents (and in the case of array/tuple)
         head, tail = [], []
-        for component, val in zip(dt.components, value):
+        for component, val in zip(node.components, value):
             # if the component is dynamic we place the encoded output
             # in the tail section, and later we will fill the head
             # with the offset to the dynamic data

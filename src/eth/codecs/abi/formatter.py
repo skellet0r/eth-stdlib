@@ -21,49 +21,49 @@ class Formatter:
     """ABI type AST formatter utilizing the Visitor pattern."""
 
     @classmethod
-    def format(cls, dt: nodes.Node) -> str:
+    def format(cls, node: nodes.Node) -> str:
         """Format an ABI type AST as a string.
 
         Returns:
             The ABI type AST represented in string form.
         """
 
-        return dt.accept(cls)
+        return node.accept(cls)
 
     @staticmethod
     def visit_Address(_) -> str:
         return "address"
 
     @classmethod
-    def visit_Array(cls, dt: nodes.Array) -> str:
-        size = "" if dt.size == -1 else f"{dt.size}"
-        return f"{cls.format(dt.subtype)}[{size}]"
+    def visit_Array(cls, node: nodes.Array) -> str:
+        size = "" if node.size == -1 else f"{node.size}"
+        return f"{cls.format(node.subtype)}[{size}]"
 
     @staticmethod
     def visit_Bool(_) -> str:
         return "bool"
 
     @staticmethod
-    def visit_Bytes(dt: nodes.Bytes) -> str:
-        if dt.is_dynamic:
+    def visit_Bytes(node: nodes.Bytes) -> str:
+        if node.is_dynamic:
             return "bytes"
-        return f"bytes{dt.size}"
+        return f"bytes{node.size}"
 
     @staticmethod
-    def visit_Fixed(dt: nodes.Fixed) -> str:
-        prefix = "" if dt.is_signed else "u"
-        return f"{prefix}fixed{dt.size}x{dt.precision}"
+    def visit_Fixed(node: nodes.Fixed) -> str:
+        prefix = "" if node.is_signed else "u"
+        return f"{prefix}fixed{node.size}x{node.precision}"
 
     @staticmethod
-    def visit_Integer(dt: nodes.Integer) -> str:
-        prefix = "" if dt.is_signed else "u"
-        return f"{prefix}int{dt.size}"
+    def visit_Integer(node: nodes.Integer) -> str:
+        prefix = "" if node.is_signed else "u"
+        return f"{prefix}int{node.size}"
 
     @staticmethod
     def visit_String(_) -> str:
         return "string"
 
     @classmethod
-    def visit_Tuple(cls, dt: nodes.Tuple) -> str:
-        inner = ",".join([cls.format(component) for component in dt.components])
+    def visit_Tuple(cls, node: nodes.Tuple) -> str:
+        inner = ",".join([cls.format(component) for component in node.components])
         return f"({inner})"
