@@ -20,6 +20,16 @@ from eth.codecs.abi.exceptions import ParseError
 
 
 class Parser:
+    """Ethereum ABI type string parser.
+
+    Attributes:
+        ARRAY_PATTERN: compiled regex for matching array type strings.
+        SPLIT_PATTERN: compiled regex for splitting tuple type strings on commas, while preserving
+            component tuples entirely (if present).
+        TUPLE_PATTERN: compiled regex for matching tuple type strings.
+        VALUE_PATTERN: compiled regex for matching value type strings 'bytesN', 'uintN', 'intN',
+            'ufixedMxN', and 'fixedMxN'.
+    """
 
     ARRAY_PATTERN = re.compile(r"(.+)\[(\d*)\]")
     SPLIT_PATTERN = re.compile(r"(\(.+\)(?:\[\d*\])*)|,")
@@ -28,6 +38,17 @@ class Parser:
 
     @classmethod
     def parse(cls, typestr: str) -> datatypes.DataType:
+        """Parse a type string into a AST-like strucutre.
+
+        Parameters:
+            typestr: an ABI type string (i.e. 'uint256', '(bytes32[],ufixed128x10)').
+
+        Returns:
+            An AST-like strucutre representing the type string.
+
+        Raises:
+            ParseError: If `typestr`, or a component type string of it, is an invalid ABI type.
+        """
         match typestr:
             case "address":
                 return datatypes.Address()
