@@ -19,8 +19,8 @@ from functools import cached_property
 from typing import Any, Literal
 
 
-class DataType:
-    """ABI data type base class.
+class Node:
+    """ABI type node base class.
 
     Note:
         Visitor classes should implement the appropriate 'visit_{ClassName}' methods.
@@ -45,12 +45,12 @@ class DataType:
 
 
 @dataclass(init=False, eq=False, slots=True)
-class Address(DataType):
+class Address(Node):
     """Address Data Type."""
 
 
 @dataclass(eq=False, slots=True)
-class Array(DataType):
+class Array(Node):
     """Array Data Type.
 
     Attributes:
@@ -58,7 +58,7 @@ class Array(DataType):
         size: The size of the array. -1 if the array is dynamically sized.
     """
 
-    subtype: DataType
+    subtype: Node
     size: int
 
     @cached_property
@@ -67,12 +67,12 @@ class Array(DataType):
 
 
 @dataclass(init=False, eq=False, slots=True)
-class Bool(DataType):
+class Bool(Node):
     """Boolean Data Type."""
 
 
 @dataclass(eq=False, slots=True)
-class Bytes(DataType):
+class Bytes(Node):
     """Byte Array Data Type.
 
     Attributes:
@@ -87,7 +87,7 @@ class Bytes(DataType):
 
 
 @dataclass(eq=False, slots=True)
-class Fixed(DataType):
+class Fixed(Node):
     """Fixed-Point Decimal Data Type.
 
     Attributes:
@@ -102,7 +102,7 @@ class Fixed(DataType):
 
 
 @dataclass(eq=False, slots=True)
-class Integer(DataType):
+class Integer(Node):
     """Integer Data Type.
 
     Attributes:
@@ -115,7 +115,7 @@ class Integer(DataType):
 
 
 @dataclass(init=False, eq=False, slots=True)
-class String(DataType):
+class String(Node):
     """String Data Type."""
 
     @cached_property
@@ -124,14 +124,14 @@ class String(DataType):
 
 
 @dataclass(eq=False, slots=True)
-class Tuple(DataType):
+class Tuple(Node):
     """Tuple Data Type.
 
     Attributes:
         components: Ordered sequence of data types which the tuple is composed of.
     """
 
-    components: list[DataType]
+    components: list[Node]
 
     @cached_property
     def is_dynamic(self):
