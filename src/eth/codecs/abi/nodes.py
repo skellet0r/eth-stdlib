@@ -29,6 +29,11 @@ class Node:
     def accept(self, visitor: object, *args, **kwargs) -> Any:
         """Accept a visitor and call the appropriate visit method on it.
 
+        Parameters:
+            visitor: Object to call visit method on.
+            *args: Additional positional arguments to pass to the visit function.
+            **kwargs: Additional keyword arguments to pass to the visit function.
+
         Returns:
             The output of the visit method on the visitor.
 
