@@ -18,10 +18,21 @@ from typing import Any
 
 
 class ABIError(Exception):
-    ...
+    """Base exception class for errors."""
 
 
 class ParseError(ABIError):
+    """Raised when attempting to parse an invalid type string.
+
+    Parameters:
+        where: The invalid type string.
+        msg: Explanation of why the type string is invalid.
+
+    Attributes:
+        where: The invalid type string.
+        msg: Explanation of why the type string is invalid.
+    """
+
     def __init__(self, where: str, msg: str, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.where = where
@@ -32,6 +43,19 @@ class ParseError(ABIError):
 
 
 class EncodeError(ABIError):
+    """Raised when attempting to encode an invalid value for a type.
+
+    Parameters:
+        typestr: The type string of the type encoding was attempted for.
+        value: The value that encoding was attempted for.
+        msg: Explanation of why the value is invalid.
+
+    Attributes:
+        typestr: The type string of the type encoding was attempted for.
+        value: The value that encoding was attempted for.
+        msg: Explanation of why the value is invalid.
+    """
+
     def __init__(self, typestr: str, value: Any, msg: str, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.typestr = typestr
