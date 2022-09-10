@@ -25,15 +25,12 @@ class Parser:
 
     Attributes:
         ARRAY_PATTERN: compiled regex for matching array type strings.
-        SPLIT_PATTERN: compiled regex for splitting tuple type strings on commas, while preserving
-            component tuples entirely (if present).
         TUPLE_PATTERN: compiled regex for matching tuple type strings.
         VALUE_PATTERN: compiled regex for matching value type strings 'bytesN', 'uintN', 'intN',
             'ufixedMxN', and 'fixedMxN'.
     """
 
     ARRAY_PATTERN = re.compile(r"(.+)\[(\d*)\]")
-    SPLIT_PATTERN = re.compile(r"(\(.+\)(?:\[\d*\])*)|,")
     TUPLE_PATTERN = re.compile(r"\(.+\)")
     VALUE_PATTERN = re.compile(r"bytes(\d+)|u?(?:fixed(\d+)x(\d+)|int(\d+))")
 
@@ -84,10 +81,28 @@ class Parser:
 
         # tuple
         if cls.TUPLE_PATTERN.fullmatch(typestr) is not None:
-            # split the type string on commas while preserving any component tuples
-            # recurse and parse each component
-            components = [cls.parse(typ) for typ in cls.SPLIT_PATTERN.split(typestr[1:-1]) if typ]
-            return datatypes.Tuple(components)
+            # goal: split the type string on commas while preserving any component tuples
+            components, compstr = [], typestr[1:-1]
+            depth, lastpos = 0, 0  # keep track of nested tuples
+            for mo in re.finditer(r"\(|\)|,", compstr):
+                match mo[0]:
+                    case "(":  # tuple start
+                        depth += 1
+                    case ")":  # tuple end
+                        depth -= 1
+                    case "," if depth == 0:  # component separator
+                        # append the component substring from lastpos up to the comma
+                        components.append(compstr[lastpos : mo.start()])
+                        lastpos = mo.end()  # set lastpos after the comma
+
+            # append the remaining component after the last comma
+            components.append(compstr[lastpos:])
+            # validate we have no empty components (dangling commas)
+            if "" in components:
+                raise ParseError(typestr, "Dangling comma detected in type string")
+
+            # recurse and parse components
+            return datatypes.Tuple([cls.parse(component) for component in components])
 
         # array
         if (mo := cls.ARRAY_PATTERN.fullmatch(typestr)) is not None:
