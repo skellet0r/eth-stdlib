@@ -22,7 +22,11 @@ class Formatter:
 
     @classmethod
     def format(cls, dt: datatypes.DataType) -> str:
-        """Format an ABI type AST as a string."""
+        """Format an ABI type AST as a string.
+
+        Returns:
+            The ABI type AST represented in string form.
+        """
 
         return dt.accept(cls)
 
