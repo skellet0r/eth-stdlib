@@ -29,7 +29,12 @@ class Formatter:
 
         Returns:
             The ABI type AST/node represented in string form.
+
+        Raises:
+            TypeError: If node argument is not an instance of `nodes.Node`.
         """
+        if not isinstance(node, nodes.Node):
+            raise TypeError(f"Invalid argument type for node: {type(node).__qualname__!r}")
 
         return node.accept(cls)
 
