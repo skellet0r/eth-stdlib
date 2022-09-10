@@ -79,6 +79,14 @@ class Parser:
                         raise ParseError(typestr, f"'{size}' is not a valid integer width")
                     return datatypes.Integer(size, typestr[0] != "u")
 
+        # array
+        if (mo := cls.ARRAY_PATTERN.fullmatch(typestr)) is not None:
+            subtype, size = mo[1], int(mo[2] or -1)  # if mo[2] is None the array is dynamic
+            if size == 0:
+                raise ParseError(typestr, "'0' is not a valid array size")
+            # recurse and parse the subtype of the array
+            return datatypes.Array(cls.parse(subtype), size)
+
         # tuple
         if cls.TUPLE_PATTERN.fullmatch(typestr) is not None:
             # goal: split the type string on commas while preserving any component tuples
@@ -103,14 +111,6 @@ class Parser:
 
             # recurse and parse components
             return datatypes.Tuple([cls.parse(component) for component in components])
-
-        # array
-        if (mo := cls.ARRAY_PATTERN.fullmatch(typestr)) is not None:
-            subtype, size = mo[1], int(mo[2] or -1)  # if mo[2] is None the array is dynamic
-            if size == 0:
-                raise ParseError(typestr, "'0' is not a valid array size")
-            # recurse and parse the subtype of the array
-            return datatypes.Array(cls.parse(subtype), size)
 
         # none of the above matching was successful, raise since we can't parse `typestr`
         raise ParseError(typestr, "ABI type not parseable")
