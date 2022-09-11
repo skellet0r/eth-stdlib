@@ -50,7 +50,34 @@ class Decoder:
 
     @classmethod
     def visit_Array(cls, node: nodes.Array, value: bytes) -> list[Any]:
-        pass
+        # static arrays
+        size, val = node.size, value
+        if node.size == -1:
+            # dynamic arrays
+            assert len(value) >= 32  # validate the value is atleast 32 bytes
+            size, val = int.from_bytes(value[:32], "big"), value[32:]
+
+            if size == 0:  # size can only be 0 with dynamic arrays
+                assert len(val) == 0  # validate the data section is emtpy
+                return []
+
+        # case 1: static array w/ static elements
+        # case 2: dynamic array w/ static elements
+        if not node.subtype.is_dynamic:
+            q, r = divmod(len(val), size)
+            assert r == 0, "Invalid array size"
+            return [cls.decode(node.subtype, val[i : i + q]) for i in range(0, len(val), q)]
+
+        # 3) static array, w/ dynamic elements
+        # 4) dynamic array, w/ dynamic elements
+
+        # slicing past bytes size returns empty bytes, validate we have a valid pointer section
+        assert len(val) >= (width := size * 32)
+        # generate the list of pointers (each pointer is 32 bytes)
+        ptrs = [int.from_bytes(val[i : i + 32], "big") for i in range(0, width, 32)]
+        # decode each element from the data section, the subtype will do validation
+        # if the slice taken is less than expected
+        return [cls.decode(node.subtype, val[a:b]) for a, b in zip(ptrs, [*ptrs[1:], width])]
 
     @classmethod
     def visit_Bool(cls, node: nodes.Bool, value: bytes) -> bool:
