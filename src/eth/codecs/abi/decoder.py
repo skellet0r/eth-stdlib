@@ -60,9 +60,22 @@ class Decoder:
 
         return bool.from_bytes(value, "big")
 
-    @staticmethod
-    def visit_Bytes(node: nodes.Bytes, value: bytes) -> bytes:
-        pass
+    @classmethod
+    def visit_Bytes(cls, node: nodes.Bytes, value: bytes) -> bytes:
+        if not node.is_dynamic:
+            # reverse the value since fixed-width bytes are right padded
+            cls.validate_atom(node, value[::-1], node.size * 8)
+            return value[: node.size]
+
+        # dynamic values are encoded as size + bytes
+        try:
+            assert len(value) >= 32, "Invalid size for dynamic bytes"
+            size = int.from_bytes(value[:32], "big")
+            assert len(value[32 : 32 + size]) == size, "Data section is not the correct size"
+        except AssertionError as e:
+            raise DecodeError("bytes", value, e.args[0]) from e
+
+        return value[32 : 32 + size]
 
     @staticmethod
     def visit_Fixed(node: nodes.Fixed, value: bytes) -> decimal.Decimal:
