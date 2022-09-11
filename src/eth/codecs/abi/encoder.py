@@ -243,11 +243,7 @@ class Encoder:
         # recalculate the head section with pointers this time
         head = []
         for val, offset in zip(raw_head, offsets):
-            if val is None:
-                # calculate and append the pointer
-                head.append((width + offset).to_bytes(32, "big"))
-            else:
-                # append the encoded value
-                head.append(val)
+            ptr = (width + offset).to_bytes(32, "big")
+            head.append(ptr if val is None else val)
 
         return b"".join(head + tail)
