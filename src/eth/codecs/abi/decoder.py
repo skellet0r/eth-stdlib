@@ -85,9 +85,12 @@ class Decoder:
     def visit_Integer(node: nodes.Integer, value: bytes) -> int:
         pass
 
-    @staticmethod
-    def visit_String(node: nodes.String, value: bytes) -> str:
-        pass
+    @classmethod
+    def visit_String(cls, node: nodes.String, value: bytes) -> str:
+        try:
+            return cls.decode(nodes.Bytes(-1), value).decode()
+        except DecodeError as e:
+            raise DecodeError("string", value, e.msg) from e
 
     @staticmethod
     def visit_Tuple(node: nodes.Tuple, value: bytes) -> list[Any]:
