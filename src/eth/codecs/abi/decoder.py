@@ -75,9 +75,17 @@ class Decoder:
 
         return value[32 : 32 + size]
 
-    @staticmethod
-    def visit_Fixed(node: nodes.Fixed, value: bytes) -> decimal.Decimal:
-        pass
+    @classmethod
+    def visit_Fixed(cls, node: nodes.Fixed, value: bytes) -> decimal.Decimal:
+        try:
+            # decode as an integer
+            ival = cls.decode(nodes.Integer(node.size, node.is_signed), value)
+        except DecodeError as e:
+            raise DecodeError(Formatter.format(node), value, e.msg)
+
+        with decimal.localcontext(decimal.Context(prec=128)):
+            # return shifted value
+            return decimal.Decimal(ival).scaleb(-node.precision)
 
     @staticmethod
     def visit_Integer(node: nodes.Integer, value: bytes) -> int:
