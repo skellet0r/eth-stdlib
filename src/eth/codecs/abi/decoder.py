@@ -18,6 +18,8 @@ import decimal
 from typing import Any
 
 from eth.codecs.abi import nodes
+from eth.codecs.abi.exceptions import DecodeError
+from eth.codecs.abi.formatter import Formatter
 
 
 class Decoder:
@@ -32,9 +34,19 @@ class Decoder:
         return node.accept(cls, value)
 
     @staticmethod
-    def visit_Address(node: nodes.Address, value: bytes) -> str:
-        assert len(value) == 32, "Value is not 32 bytes"
-        assert int.from_bytes(value, "big") >> 160 == 0, "Value outside type bounds"
+    def validate_atom(node: nodes.Node, value: bytes, bits: int):
+        typestr = Formatter.format(node)
+        try:
+            assert len(value) == 32, "Value is not 32 bytes"
+            assert int.from_bytes(value, "big") >> bits == 0, "Value outside type bounds"
+        except AssertionError as e:
+            raise DecodeError(typestr, value, e.args[0]) from e
+        except TypeError as e:
+            raise DecodeError(typestr, value, "Value is not an instance of 'bytes'") from e
+
+    @classmethod
+    def visit_Address(cls, node: nodes.Address, value: bytes) -> str:
+        cls.validate_atom(node, value, 160)
 
         return f"0x{value[-20:].hex()}"
 
