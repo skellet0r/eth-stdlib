@@ -39,7 +39,7 @@ class Formatter:
         return node.accept(cls)
 
     @staticmethod
-    def visit_Address(_) -> str:
+    def visit_Address(node: nodes.Address) -> str:
         return "address"
 
     @classmethod
@@ -48,7 +48,7 @@ class Formatter:
         return f"{cls.format(node.subtype)}[{size}]"
 
     @staticmethod
-    def visit_Bool(_) -> str:
+    def visit_Bool(node: nodes.Bool) -> str:
         return "bool"
 
     @staticmethod
@@ -68,7 +68,7 @@ class Formatter:
         return f"{prefix}int{node.size}"
 
     @staticmethod
-    def visit_String(_) -> str:
+    def visit_String(node: nodes.String) -> str:
         return "string"
 
     @classmethod

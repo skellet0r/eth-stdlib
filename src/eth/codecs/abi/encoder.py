@@ -47,7 +47,7 @@ class Encoder:
         return node.accept(cls, value)
 
     @staticmethod
-    def visit_Address(_, value: str) -> bytes:
+    def visit_Address(node: nodes.Address, value: str) -> bytes:
         try:
             bval = bytes.fromhex(value.removeprefix("0x"))
             assert len(bval) == 20
@@ -108,7 +108,7 @@ class Encoder:
         return len(value).to_bytes(32, "big") + b"".join(head + tail)
 
     @staticmethod
-    def visit_Bool(_, value: bool) -> bytes:
+    def visit_Bool(node: nodes.Bool, value: bool) -> bytes:
         try:
             assert isinstance(value, bool), "Value is not an instance of type 'bool'"
             return value.to_bytes(32, "big")
@@ -191,7 +191,7 @@ class Encoder:
         return value.to_bytes(32, "big", signed=node.is_signed)
 
     @classmethod
-    def visit_String(cls, _, value: str) -> bytes:
+    def visit_String(cls, node: nodes.String, value: str) -> bytes:
         try:
             return cls.encode(nodes.Bytes(-1), value.encode())
         except (AttributeError, EncodeError) as e:
