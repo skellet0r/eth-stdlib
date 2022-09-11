@@ -33,7 +33,10 @@ class Decoder:
 
     @staticmethod
     def visit_Address(node: nodes.Address, value: bytes) -> str:
-        pass
+        assert len(value) == 32, "Value is not 32 bytes"
+        assert int.from_bytes(value, "big") >> 160 == 0, "Value outside type bounds"
+
+        return f"0x{value[-20:].hex()}"
 
     @classmethod
     def visit_Array(cls, node: nodes.Array, value: bytes) -> list[Any]:
