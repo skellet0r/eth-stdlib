@@ -54,9 +54,11 @@ class Decoder:
     def visit_Array(cls, node: nodes.Array, value: bytes) -> list[Any]:
         pass
 
-    @staticmethod
-    def visit_Bool(node: nodes.Bool, value: bytes) -> bool:
-        pass
+    @classmethod
+    def visit_Bool(cls, node: nodes.Bool, value: bytes) -> bool:
+        cls.validate_atom(node, value, 1)
+
+        return bool.from_bytes(value, "big")
 
     @staticmethod
     def visit_Bytes(node: nodes.Bytes, value: bytes) -> bytes:
