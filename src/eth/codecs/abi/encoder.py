@@ -155,19 +155,14 @@ class Encoder:
             try:
                 assert lo <= value <= hi, "Value outside type bounds"
                 # take care of negative values here, they imply that node.is_signed is True
-                scaled_value = (
-                    int(value.scaleb(node.precision).to_integral_exact()) % 2**node.size
-                )
+                scaled_value = int(value.scaleb(node.precision).to_integral_exact())
                 # using to_integral_exact will signal Inexact if non-zero digits were rounded off
                 # https://docs.python.org/3/library/decimal.html#decimal.Decimal.to_integral_exact
                 assert not ctx.flags[decimal.Inexact], "Precision of value is greater than allowed"
             except AssertionError as e:
                 raise EncodeError(typestr, value, e.args[0]) from e
 
-        if value < 0:  # implies node.is_signed is True
-            width = (scaled_value.bit_length() + 7) // 8
-            return scaled_value.to_bytes(width, "big").rjust(32, b"\xff")
-        return scaled_value.to_bytes(32, "big")
+        return scaled_value.to_bytes(32, "big", signed=node.is_signed)
 
     @staticmethod
     def visit_Integer(node: nodes.Integer, value: int) -> bytes:
