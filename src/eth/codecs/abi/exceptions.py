@@ -44,19 +44,19 @@ class ParseError(ABIError):
         return f"Error at {self.where!r} - {self.msg}"
 
 
-class EncodeError(ABIError):
-    """Raised when attempting to encode an invalid value for a type.
+class CodecError(ABIError):
+    """Base class for codec errors.
 
     Parameters:
-        typestr: The type string of the type encoding was attempted for.
-        value: The value that encoding was attempted for.
+        typestr: The type string of the type coding was attempted for.
+        value: The value that coding was attempted for.
         msg: Explanation of why the value is invalid.
         *args: Additional arguments passed to the parent class init method.
         **kwargs: Additional keyword arguments passed to the parent class init method.
 
     Attributes:
-        typestr: The type string of the type encoding was attempted for.
-        value: The value that encoding was attempted for.
+        typestr: The type string of the type coding was attempted for.
+        value: The value that coding was attempted for.
         msg: Explanation of why the value is invalid.
     """
 
@@ -66,5 +66,16 @@ class EncodeError(ABIError):
         self.value = value
         self.msg = msg
 
+
+class EncodeError(CodecError):
+    """Raised when attempting to encode an invalid value for a type."""
+
     def __str__(self) -> str:
         return f"Error encoding {self.value!r} as {self.typestr!r} - {self.msg}"
+
+
+class DecodeError(CodecError):
+    """Raised when attempting to decode an invalid value for a type."""
+
+    def __str__(self) -> str:
+        return f"Error decoding {self.value!r} as {self.typestr!r} - {self.msg}"
