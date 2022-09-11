@@ -41,8 +41,6 @@ class Decoder:
             assert int.from_bytes(value, "big") >> bits == 0, "Value outside type bounds"
         except AssertionError as e:
             raise DecodeError(typestr, value, e.args[0]) from e
-        except TypeError as e:
-            raise DecodeError(typestr, value, "Value is not an instance of 'bytes'") from e
 
     @classmethod
     def visit_Address(cls, node: nodes.Address, value: bytes) -> str:
@@ -83,7 +81,20 @@ class Decoder:
 
     @staticmethod
     def visit_Integer(node: nodes.Integer, value: bytes) -> int:
-        pass
+        try:
+            assert len(value) == 32, "Value is not 32 bytes"
+
+            # calculate type bounds
+            lo, hi = 0, 2**node.size - 1
+            if node.is_signed:
+                lo, hi = 2 ** (node.size - 1), 2 ** (node.size - 1) - 1
+
+            # convert the bytes to an integer
+            ival = int.from_bytes(value, "big", signed=node.is_signed)
+            assert lo <= ival <= hi, "Value is outside type bounds"
+            return ival
+        except AssertionError as e:
+            raise DecodeError(Formatter.format(node), value, e.args[0])
 
     @classmethod
     def visit_String(cls, node: nodes.String, value: bytes) -> str:
