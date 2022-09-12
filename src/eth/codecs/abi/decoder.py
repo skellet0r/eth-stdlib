@@ -15,6 +15,7 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 import decimal
+from collections import deque
 from typing import Any
 
 from eth.codecs.abi import nodes
@@ -138,6 +139,25 @@ class Decoder:
         except DecodeError as e:
             raise DecodeError("string", value, e.msg) from e
 
-    @staticmethod
-    def visit_Tuple(node: nodes.Tuple, value: bytes) -> list[Any]:
-        pass
+    @classmethod
+    def visit_Tuple(cls, node: nodes.Tuple, value: bytes) -> list[Any]:
+        pos, raw_head = 0, []
+        for typ in node.components:
+            raw_head.append(value[pos : pos + len(typ)])
+            pos += len(typ)
+
+        if not node.is_dynamic:
+            # no tail section
+            return [cls.decode(typ, val) for typ, val in zip(node.components, raw_head)]
+
+        typ_and_vals = list(zip(node.components, raw_head))
+
+        # ptrs are in the head section, convert them to ints in a single list
+        ptrs = [int.from_bytes(val, "big") for typ, val in typ_and_vals if typ.is_dynamic]
+        # for each pointer copy the data from the dynamic section similar to array decoding
+        data = deque([value[a:b] for a, b in zip(ptrs, ptrs[1:])] + [value[ptrs[-1] :]])
+        # replace each ptr with its data
+        head = [data.popleft() if typ.is_dynamic else val for typ, val in typ_and_vals]
+
+        # return the decoded elements
+        return [cls.decode(typ, val) for typ, val in zip(node.components, head)]
