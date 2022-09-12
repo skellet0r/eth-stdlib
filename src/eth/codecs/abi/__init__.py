@@ -16,6 +16,7 @@
 
 from typing import Any
 
+from eth.codecs.abi.decoder import Decoder
 from eth.codecs.abi.encoder import Encoder
 from eth.codecs.abi.parser import Parser
 
@@ -35,3 +36,7 @@ def encode(typestr: str, value: Any) -> bytes:
         ParseError: if `typestr`, or a sub-string thereof, is an invalid ABI type.
     """
     return Encoder.encode(Parser.parse(typestr), value)
+
+
+def decode(typestr: str, value: bytes) -> Any:
+    return Decoder.decode(Parser.parse(typestr), value)
