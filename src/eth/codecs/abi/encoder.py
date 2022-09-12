@@ -75,9 +75,9 @@ class Encoder:
 
         # there are 4 possible cases when encoding an array
         # 1) static array, w/ static elements
-        # 2) dynamic array, w/ static elements
-        # 3) static array, w/ dynamic elements
-        # 4) dynamic array, w/ dynamic elements
+        # 2) dynamic array, w/ static elements - ptr
+        # 3) static array, w/ dynamic elements - ptr
+        # 4) dynamic array, w/ dynamic elements - ptr
 
         tail = [cls.encode(node.subtype, val) for val in value]
         if not node.is_dynamic:
@@ -222,8 +222,8 @@ class Encoder:
             # with a pointer), and the encoded element in the tail section
             # if the element is static, append the encoded element in the head section,
             # and an empty (0-width) bytes value to the tail
-            raw_head.append(None if val.is_dynamic else output)
-            tail.append(output if val.is_dynamic else b"")
+            raw_head.append(None if typ.is_dynamic else output)
+            tail.append(output if typ.is_dynamic else b"")
 
         # calculate the width of the static-head section
         # since elements in the head section can be different types, they
