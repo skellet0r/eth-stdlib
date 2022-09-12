@@ -24,11 +24,27 @@ from eth.codecs.abi.formatter import Formatter
 
 
 class Decoder:
+    """Ethereum ABI Decoder."""
+
     @classmethod
     def decode(cls, node: nodes.Node, value: bytes) -> Any:
+        """Decode a value according to an ABI type.
+
+        Parameters:
+            node: The ABI type to decode the value as.
+            value: The value to be decoded.
+
+        Returns:
+            The decoded value.
+
+        Raises:
+            DecodeError: If value, or sub-component thereof, can't be decoded.
+            TypeError: If node argument is not an instance of `nodes.Node`, or if value argument
+            is not an instance of `bytes`.
+        """
         try:
             assert isinstance(node, nodes.Node), ("node", type(node).__qualname__)
-            assert isinstance(value, (bytes, bytearray)), ("value", type(value).__qualname__)
+            assert isinstance(value, bytes), ("value", type(value).__qualname__)
         except AssertionError as e:
             param, typ = e.args[0]
             raise TypeError(f"Received invalid type {typ!r} for parameter {param!r}")
@@ -36,6 +52,17 @@ class Decoder:
 
     @staticmethod
     def validate_atom(node: nodes.Node, value: bytes, bits: int):
+        """Validate an atomic type is within its type bounds.
+
+        Parameters:
+            node: An ABI type node.
+            value: The bytes to validate.
+            bits: The number of bits the value should occupy.
+
+        Raises:
+            DecodeError: If value length is not 32 bytes, or the value is outside of
+            the type bounds.
+        """
         typestr = Formatter.format(node)
         try:
             assert len(value) == 32, "Value is not 32 bytes"
