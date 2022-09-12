@@ -72,13 +72,12 @@ class Decoder:
         # 3) static array, w/ dynamic elements
         # 4) dynamic array, w/ dynamic elements
 
-        # slicing past bytes size returns empty bytes, validate we have a valid pointer section
-        assert len(val) >= (width := size * 32)
         # generate the list of pointers (each pointer is 32 bytes)
-        ptrs = [int.from_bytes(val[i : i + 32], "big") for i in range(0, width, 32)]
+        ptrs = [int.from_bytes(val[i : i + 32], "big") for i in range(0, size * 32, 32)]
+        # generate the list of data, slice the data section from last pointer to end as last item
+        data = [val[a:b] for a, b in zip(ptrs, ptrs[1:])] + [val[ptrs[-1] :]]
         # decode each element from the data section, the subtype will do validation
-        # if the slice taken is less than expected
-        return [cls.decode(node.subtype, val[a:b]) for a, b in zip(ptrs, [*ptrs[1:], width])]
+        return [cls.decode(node.subtype, v) for v in data]
 
     @classmethod
     def visit_Bool(cls, node: nodes.Bool, value: bytes) -> bool:
@@ -156,8 +155,8 @@ class Decoder:
         ptrs = [int.from_bytes(val, "big") for typ, val in typ_and_vals if typ.is_dynamic]
         # for each pointer copy the data from the dynamic section similar to array decoding
         data = deque([value[a:b] for a, b in zip(ptrs, ptrs[1:])] + [value[ptrs[-1] :]])
-        # replace each ptr with its data
-        head = [data.popleft() if typ.is_dynamic else val for typ, val in typ_and_vals]
+        # replace each ptr with its data - generator
+        head = (data.popleft() if typ.is_dynamic else val for typ, val in typ_and_vals)
 
         # return the decoded elements
         return [cls.decode(typ, val) for typ, val in zip(node.components, head)]
