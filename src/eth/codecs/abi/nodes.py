@@ -15,7 +15,7 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 from dataclasses import dataclass
-from functools import cached_property
+from functools import cache, cached_property
 from typing import Any, Literal
 
 
@@ -48,6 +48,10 @@ class Node:
         """Indicates if the data type instance is considered dynamic."""
         return False
 
+    def __len__(self) -> int:
+        """Expected bytes the encoded element will occupy in the head of a tuple or array."""
+        return 32
+
 
 @dataclass(init=False, eq=False, slots=True)
 class Address(Node):
@@ -73,6 +77,21 @@ class Array(Node):
     @cached_property
     def is_dynamic(self) -> bool:
         return self.size == -1 or self.subtype.is_dynamic
+
+    @cache
+    def __len__(self) -> int:
+        if not self.is_dynamic:
+            # 1) static array, w/ static elements
+            # each element is concatenated so the total size of the array is the product of the
+            # subtype's width * the number of elements in the array
+            return len(self.subtype) * self.size
+        else:
+            # 2) dynamic array, w/ static elements - ptr
+            # 3) static array, w/ dynamic elements - ptr
+            # 4) dynamic array, w/ dynamic elements - ptr
+            # all types which are dynamic or contain dynamic components get stored in the tail
+            # and a pointer is placed in the head
+            return 32
 
 
 @dataclass(init=False, eq=False, slots=True)
@@ -160,3 +179,10 @@ class Tuple(Node):
     @cached_property
     def is_dynamic(self):
         return any((elem.is_dynamic for elem in self.components))
+
+    @cache
+    def __len__(self) -> int:
+        if not self.is_dynamic:
+            # each element is concatenated and placed in the head
+            return sum([len(elem) for elem in self.components])
+        return 32
