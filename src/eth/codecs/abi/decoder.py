@@ -16,6 +16,7 @@
 
 import decimal
 from collections import deque
+from operator import lshift, rshift
 from typing import Any
 
 from eth.codecs.abi import nodes
@@ -25,6 +26,8 @@ from eth.codecs.abi.formatter import Formatter
 
 class Decoder:
     """Ethereum ABI Decoder."""
+
+    WORD_MASK = 2**256 - 1
 
     @classmethod
     def decode(cls, node: nodes.Node, value: bytes) -> Any:
@@ -50,8 +53,8 @@ class Decoder:
             raise TypeError(f"Received invalid type {typ!r} for parameter {param!r}")
         return node.accept(cls, value)
 
-    @staticmethod
-    def validate_atom(node: nodes.Node, value: bytes, bits: int):
+    @classmethod
+    def validate_atom(cls, node: nodes.Node, value: bytes, bits: int):
         """Validate an atomic type is within its type bounds.
 
         Parameters:
@@ -64,9 +67,12 @@ class Decoder:
             the type bounds.
         """
         typestr = Formatter.format(node)
+        shift = lshift if bits < 0 else rshift
         try:
             assert len(value) == 32, "Value is not 32 bytes"
-            assert int.from_bytes(value, "big") >> bits == 0, "Value outside type bounds"
+            sval = shift(int.from_bytes(value, "big"), abs(bits))
+            # mask to fit only word-length
+            assert (sval & cls.WORD_MASK) == 0, "Value outside type bounds"
         except AssertionError as e:
             raise DecodeError(typestr, value, e.args[0]) from e
 
@@ -115,8 +121,9 @@ class Decoder:
     @classmethod
     def visit_Bytes(cls, node: nodes.Bytes, value: bytes) -> bytes:
         if not node.is_dynamic:
-            # reverse the value since fixed-width bytes are right padded
-            cls.validate_atom(node, value[::-1], node.size * 8)
+            # fixed-width bytes are right padded with null bytes
+            # therefore need to shift left
+            cls.validate_atom(node, value, -node.size * 8)
             return value[: node.size]
 
         # dynamic values are encoded as size + bytes
