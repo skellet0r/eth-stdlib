@@ -142,19 +142,16 @@ class Encoder:
         if not isinstance(value, decimal.Decimal):
             raise EncodeError(typestr, value, "Value is not an instance of type 'decimal.Decimal'")
 
-        # calculate the type bounds
         with decimal.localcontext(decimal.Context(prec=128)) as ctx:
-            scalar = decimal.Decimal(10).scaleb(-node.precision)  # 10 ** -precision
-            lo, hi = decimal.Decimal(0), decimal.Decimal(2**node.size - 1) * scalar
+            # calculate the type bounds
+            lo, hi = decimal.Decimal(0), decimal.Decimal(2**node.size - 1)
             if node.is_signed:
-                lo, hi = (
-                    decimal.Decimal(-(2 ** (node.size - 1))) * scalar,
-                    decimal.Decimal(2 ** (node.size - 1) - 1) * scalar,
-                )
+                lo, hi = lo - 2 ** (node.size - 1), hi - 2 ** (node.size - 1)
+
+            lo, hi = lo.scaleb(-node.precision), hi.scaleb(-node.precision)
 
             try:
                 assert lo <= value <= hi, "Value outside type bounds"
-                # take care of negative values here, they imply that node.is_signed is True
                 scaled_value = int(value.scaleb(node.precision).to_integral_exact())
                 # using to_integral_exact will signal Inexact if non-zero digits were rounded off
                 # https://docs.python.org/3/library/decimal.html#decimal.Decimal.to_integral_exact
@@ -169,7 +166,7 @@ class Encoder:
         # calculate type bounds
         lo, hi = 0, 2**node.size - 1
         if node.is_signed:
-            lo, hi = -(2 ** (node.size - 1)), 2 ** (node.size - 1) - 1
+            lo, hi = lo - 2 ** (node.size - 1), hi - 2 ** (node.size - 1)
 
         try:
             # validate value fits in type and is of type int

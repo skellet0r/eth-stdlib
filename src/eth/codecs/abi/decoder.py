@@ -66,7 +66,6 @@ class Decoder:
             DecodeError: If value length is not 32 bytes, or the value is outside of
             the type bounds.
         """
-        typestr = Formatter.format(node)
         shift = lshift if bits < 0 else rshift
         try:
             assert len(value) == 32, "Value is not 32 bytes"
@@ -74,7 +73,7 @@ class Decoder:
             # mask to fit only word-length
             assert (sval & cls.WORD_MASK) == 0, "Value outside type bounds"
         except AssertionError as e:
-            raise DecodeError(typestr, value, e.args[0]) from e
+            raise DecodeError(Formatter.format(node), value, e.args[0]) from e
 
     @classmethod
     def visit_Address(cls, node: nodes.Address, value: bytes) -> str:
