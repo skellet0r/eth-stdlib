@@ -94,6 +94,9 @@ class Decoder:
             if size == 0:
                 # size can only be 0 for dynamic arrays, in which case return an empty list
                 return []
+        elif len(value) < len(node.subtype) * size:
+            # should be equal to the product of the subtype length with the array size
+            raise DecodeError(Formatter.format(node), value, "Static array value invalid size")
 
         # case 1: static array w/ static elements
         # case 2: dynamic array w/ static elements
@@ -176,6 +179,10 @@ class Decoder:
 
     @classmethod
     def visit_Tuple(cls, node: nodes.Tuple, value: bytes) -> list[Any]:
+        # value size should be >= the sum of the length of its components
+        if len(value) < sum([len(elem) for elem in node.components]):
+            raise DecodeError(Formatter.format(node), value, "Value length is less than expected")
+
         pos, raw_head = 0, []
         for typ in node.components:
             raw_head.append(value[pos : pos + len(typ)])
