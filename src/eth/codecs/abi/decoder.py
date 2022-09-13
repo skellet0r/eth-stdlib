@@ -84,26 +84,28 @@ class Decoder:
 
     @classmethod
     def visit_Array(cls, node: nodes.Array, value: bytes) -> list[Any]:
-        # static arrays
         size, val = node.size, value
         if node.size == -1:
-            # dynamic arrays
-            assert len(value) >= 32  # validate the value is atleast 32 bytes
-            size, val = int.from_bytes(value[:32], "big"), value[32:]
+            # dynamic array is atleast 32 bytes (the size of the array)
+            if len(value) < 32:
+                raise DecodeError(Formatter.format(node), value, "Dynamic array value invalid size")
 
-            if size == 0:  # size can only be 0 with dynamic arrays
-                assert len(val) == 0  # validate the data section is emtpy
+            size, val = int.from_bytes(value[:32], "big"), value[32:]
+            if size == 0:
+                # size can only be 0 for dynamic arrays, in which case return an empty list
                 return []
 
         # case 1: static array w/ static elements
         # case 2: dynamic array w/ static elements
         if not node.subtype.is_dynamic:
             q, r = divmod(len(val), size)
-            assert r == 0, "Invalid array size"
+            if r != 0:
+                raise DecodeError(Formatter.format(node), value, "Invalid array size")
             return [cls.decode(node.subtype, val[i : i + q]) for i in range(0, len(val), q)]
 
         # 3) static array, w/ dynamic elements
         # 4) dynamic array, w/ dynamic elements
+        # subtype is dynamic so their is a head and tail, the head contains pointers to the tail
 
         # generate the list of pointers (each pointer is 32 bytes)
         ptrs = [int.from_bytes(val[i : i + 32], "big") for i in range(0, size * 32, 32)]
