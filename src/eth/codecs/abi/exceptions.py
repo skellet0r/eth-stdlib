@@ -78,4 +78,4 @@ class DecodeError(CodecError):
     """Raised when attempting to decode an invalid value for a type."""
 
     def __str__(self) -> str:
-        return f"Error decoding {self.value!r} as {self.typestr!r} - {self.msg}"
+        return f"Error decoding {'0x' + self.value.hex()!r} as {self.typestr!r} - {self.msg}"
