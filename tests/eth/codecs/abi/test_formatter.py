@@ -1,7 +1,9 @@
 import pytest
+from hypothesis import given, settings
 
 from eth.codecs.abi.formatter import Formatter
 from eth.codecs.abi.nodes import Address, Bool, Bytes, Fixed, Integer, String
+from tests.strategies.abi import nodes as st_nodes
 
 
 @pytest.mark.parametrize("typ,result", [(Address, "address"), (Bool, "bool"), (String, "string")])
@@ -25,3 +27,19 @@ def test_format_fixed(bits, prec, is_signed):
 def test_format_integer(bits, is_signed):
     expected = f"{'' if is_signed else 'u'}int{bits}"
     assert Formatter.format(Integer(bits, is_signed)) == expected
+
+
+@settings(max_examples=5)
+@given(st_nodes.Array)
+def test_format_array(node):
+    suffix = "[]" if node.size == -1 else f"[{node.size}]"
+
+    assert Formatter.format(node) == Formatter.format(node.subtype) + suffix
+
+
+@settings(max_examples=5)
+@given(st_nodes.Tuple)
+def test_format_tuple(node):
+    inner = ",".join(Formatter.format(c) for c in node.components)
+
+    assert Formatter.format(node) == f"({inner})"
