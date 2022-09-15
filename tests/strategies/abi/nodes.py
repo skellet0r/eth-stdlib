@@ -51,4 +51,4 @@ def extend(base: st.SearchStrategy) -> st.SearchStrategy:
     return arrays | tuples
 
 
-Composite = st.recursive(Atomic, extend, max_leaves=MAX_DEPTH)
+Node = st.recursive(Atomic, extend, max_leaves=MAX_DEPTH)
