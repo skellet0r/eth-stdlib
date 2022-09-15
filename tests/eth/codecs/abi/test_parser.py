@@ -1,5 +1,6 @@
+import hypothesis.strategies as st
 import pytest
-from hypothesis import given
+from hypothesis import assume, given, settings
 
 from eth.codecs.abi.exceptions import ParseError
 from eth.codecs.abi.formatter import Formatter
@@ -45,3 +46,13 @@ def test_parse_invalid_array_typestr_raises():
 def test_parse_invalid_tuple_typestr_raises():
     with pytest.raises(ParseError, match=r"Dangling comma detected in type string"):
         Parser.parse("(aa,bb,)")
+
+
+@settings(max_examples=5)
+@given(st.text())
+def test_parse_invalid_typestr_raises(typestr):
+    assume(typestr not in ("bytes", "string", "address", "bool"))
+    assume(all(typ not in typestr for typ in ("uint", "int", "ufixed", "fixed")))
+
+    with pytest.raises(ParseError, match="ABI type not parseable"):
+        Parser.parse(typestr)
