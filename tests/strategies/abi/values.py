@@ -6,13 +6,13 @@ import hypothesis.strategies as st
 from eth.codecs.abi import nodes
 
 
-class StrategyCreator:
-    """ABI value strategy creator."""
+class StrategyMaker:
+    """ABI value strategy maker."""
 
     ADDRESS_PATTERN = re.compile(r"0x[a-f0-9]", re.IGNORECASE)
 
     @classmethod
-    def create(cls, node: nodes.Node) -> st.SearchStrategy:
+    def make_strategy(cls, node: nodes.Node) -> st.SearchStrategy:
         """Create a hypothesis search strategy for a given ABI type.
 
         Parameters:
@@ -29,7 +29,7 @@ class StrategyCreator:
 
     @classmethod
     def visit_Array(cls, node: nodes.Array) -> st.SearchStrategy:
-        st_subtype = cls.create(node.subtype)
+        st_subtype = cls.make_strategy(node.subtype)
         min_size, max_size = (0, None) if node.size == -1 else (node.size, node.size)
         return st.lists(st_subtype, min_size=min_size, max_size=max_size)
 
@@ -71,5 +71,5 @@ class StrategyCreator:
 
     @classmethod
     def visit_Tuple(cls, node: nodes.Tuple) -> st.SearchStrategy:
-        inner_strategies = [cls.create(component) for component in node.components]
+        inner_strategies = [cls.make_strategy(component) for component in node.components]
         return st.tuples(*inner_strategies)
