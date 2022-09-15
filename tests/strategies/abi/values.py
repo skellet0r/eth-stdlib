@@ -1,7 +1,7 @@
 import decimal
 import re
 
-from hypothesis import strategies as st
+import hypothesis.strategies as st
 
 from eth.codecs.abi import nodes
 
