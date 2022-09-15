@@ -1,5 +1,4 @@
 import decimal
-import re
 
 import hypothesis.strategies as st
 
@@ -8,8 +7,6 @@ from eth.codecs.abi import nodes
 
 class StrategyMaker:
     """ABI value strategy maker."""
-
-    ADDRESS_PATTERN = re.compile(r"0x[a-f0-9]", re.IGNORECASE)
 
     @classmethod
     def make_strategy(cls, node: nodes.Node) -> st.SearchStrategy:
@@ -25,7 +22,7 @@ class StrategyMaker:
 
     @classmethod
     def visit_Address(cls, node: nodes.Address) -> st.SearchStrategy:
-        return st.from_regex(cls.ADDRESS_PATTERN, fullmatch=True)
+        return st.from_regex(r"0x[a-fA-F0-9]{40}", fullmatch=True)
 
     @classmethod
     def visit_Array(cls, node: nodes.Array) -> st.SearchStrategy:
