@@ -39,4 +39,17 @@ def encode(typestr: str, value: Any) -> bytes:
 
 
 def decode(typestr: str, value: bytes) -> Any:
+    """Decode a value according to an ABI type string.
+
+    Parameters:
+        typestr: An ABI type string (i.e. 'uint256[]', '(uint8,bytes32)').
+        value: The value to decode.
+
+    Returns:
+        The decoded value.
+
+    Raises:
+        DecodeError: if value, or an element thereof, is not decodable.
+        ParseError: if `typestr`, or a sub-string thereof, is an invalid ABI type.
+    """
     return Decoder.decode(Parser.parse(typestr), value)
