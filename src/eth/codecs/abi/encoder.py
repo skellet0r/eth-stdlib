@@ -142,13 +142,15 @@ class Encoder:
         if not isinstance(value, decimal.Decimal):
             raise EncodeError(typestr, value, "Value is not an instance of type 'decimal.Decimal'")
 
-        with decimal.localcontext(decimal.Context(prec=128)) as ctx:
-            # calculate the type bounds
-            lo, hi = decimal.Decimal(0), decimal.Decimal(2**node.size - 1)
-            if node.is_signed:
-                lo, hi = lo - 2 ** (node.size - 1), hi - 2 ** (node.size - 1)
+        # calculate the integer type bounds
+        ilo, ihi = 0, 2**node.size - 1
+        if node.is_signed:
+            subtrahend = 2 ** (node.size - 1)
+            ilo, ihi = ilo - subtrahend, ihi - subtrahend
 
-            lo, hi = lo.scaleb(-node.precision), hi.scaleb(-node.precision)
+        with decimal.localcontext(decimal.Context(prec=128)) as ctx:
+            # finalize type bound calculation by dividing by scalar 10**-precision
+            lo, hi = [decimal.Decimal(v).scaleb(-node.precision) for v in [ilo, ihi]]
 
             try:
                 assert lo <= value <= hi, "Value outside type bounds"
