@@ -29,9 +29,9 @@ class StrategyCreator:
 
     @classmethod
     def visit_Array(cls, node: nodes.Array) -> st.SearchStrategy:
-        st_element = cls.create(node.subtype)
-        min_, max_ = (0, None) if node.size == -1 else (node.size, node.size)
-        return st.lists(st_element, min_size=min_, max_size=max_)
+        st_subtype = cls.create(node.subtype)
+        min_size, max_size = (0, None) if node.size == -1 else (node.size, node.size)
+        return st.lists(st_subtype, min_size=min_size, max_size=max_size)
 
     @staticmethod
     def visit_Bool(node: nodes.Bool) -> st.SearchStrategy:
@@ -39,8 +39,8 @@ class StrategyCreator:
 
     @staticmethod
     def visit_Bytes(node: nodes.Bytes) -> st.SearchStrategy:
-        size = None if node.size == -1 else node.size
-        return st.binary(min_size=size, max_size=size)
+        min_size, max_size = (0, None) if node.size == -1 else (node.size, node.size)
+        return st.binary(min_size=min_size, max_size=max_size)
 
     @staticmethod
     def visit_Fixed(node: nodes.Fixed) -> st.SearchStrategy:
