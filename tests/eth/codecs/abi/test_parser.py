@@ -49,7 +49,7 @@ def test_parse_invalid_tuple_typestr_raises():
 
 
 @settings(max_examples=5)
-@given(st.text())
+@given(st.text(max_size=128))
 def test_parse_invalid_typestr_raises(typestr):
     assume(typestr not in ("bytes", "string", "address", "bool"))
     assume(all(typ not in typestr for typ in ("uint", "int", "ufixed", "fixed")))
