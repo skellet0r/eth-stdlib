@@ -53,12 +53,12 @@ class Node:
         return 32
 
 
-@dataclass(init=False, eq=False, slots=True)
+@dataclass(init=False, slots=True)
 class Address(Node):
     """Address Data Type."""
 
 
-@dataclass(eq=False, slots=True)
+@dataclass(slots=True)
 class Array(Node):
     """Array Data Type.
 
@@ -94,12 +94,12 @@ class Array(Node):
             return 32
 
 
-@dataclass(init=False, eq=False, slots=True)
+@dataclass(init=False, slots=True)
 class Bool(Node):
     """Boolean Data Type."""
 
 
-@dataclass(eq=False, slots=True)
+@dataclass(slots=True)
 class Bytes(Node):
     """Byte Array Data Type.
 
@@ -117,7 +117,7 @@ class Bytes(Node):
         return self.size == -1
 
 
-@dataclass(eq=False, slots=True)
+@dataclass(slots=True)
 class Fixed(Node):
     """Fixed-Point Decimal Data Type.
 
@@ -137,7 +137,7 @@ class Fixed(Node):
     is_signed: bool
 
 
-@dataclass(eq=False, slots=True)
+@dataclass(slots=True)
 class Integer(Node):
     """Integer Data Type.
 
@@ -154,7 +154,7 @@ class Integer(Node):
     is_signed: bool
 
 
-@dataclass(init=False, eq=False, slots=True)
+@dataclass(init=False, slots=True)
 class String(Node):
     """String Data Type."""
 
@@ -163,7 +163,7 @@ class String(Node):
         return True
 
 
-@dataclass(eq=False, slots=True)
+@dataclass(slots=True)
 class Tuple(Node):
     """Tuple Data Type.
 
