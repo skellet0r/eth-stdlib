@@ -177,7 +177,7 @@ class Decoder:
             raise DecodeError("string", value, e.msg) from e
 
     @classmethod
-    def visit_Tuple(cls, node: nodes.Tuple, value: bytes) -> list[Any]:
+    def visit_Tuple(cls, node: nodes.Tuple, value: bytes) -> tuple:
         # value size should be >= the sum of the length of its components
         if len(value) < sum([len(elem) for elem in node.components]):
             raise DecodeError(Formatter.format(node), value, "Value length is less than expected")
@@ -189,7 +189,7 @@ class Decoder:
 
         if not node.is_dynamic:
             # no tail section
-            return [cls.decode(typ, val) for typ, val in zip(node.components, raw_head)]
+            return tuple([cls.decode(typ, val) for typ, val in zip(node.components, raw_head)])
 
         typ_and_vals = list(zip(node.components, raw_head))
 
@@ -201,4 +201,4 @@ class Decoder:
         head = (data.popleft() if typ.is_dynamic else val for typ, val in typ_and_vals)
 
         # return the decoded elements
-        return [cls.decode(typ, val) for typ, val in zip(node.components, head)]
+        return tuple([cls.decode(typ, val) for typ, val in zip(node.components, head)])
