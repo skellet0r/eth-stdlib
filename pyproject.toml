@@ -47,4 +47,4 @@ profile = "black"
 line_length = 100
 
 [tool.pytest.ini_options]
-addopts = "--cov src/ --no-cov-on-fail"
+addopts = "--cov src/ --cov-report term --cov-report html --no-cov-on-fail"
