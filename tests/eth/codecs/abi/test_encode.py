@@ -56,3 +56,11 @@ def test_encode_fixed_point(value):
     with decimal.localcontext(decimal.Context(prec=128)):
         scaled_val = int(val.scaleb(precision).to_integral_exact())
     assert output == scaled_val.to_bytes(32, "big", signed=not typestr[0] == "u")
+
+
+@given(typestr_and_value(st_nodes.Integer))
+def test_encode_integer(value):
+    typestr, val = value
+    output = encode(typestr, val)
+
+    assert output == val.to_bytes(32, "big", signed=not typestr[0] == "u")
