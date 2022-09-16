@@ -2,12 +2,13 @@
 # https://coverage.readthedocs.io/en/latest/config.html
 [run]
 branch = True
-source = src/
 
 [report]
 ignore_errors = True
-show_missing = True
 skip_empty = True
+show_missing = True
+skip_covered = True
+sort = -cover
 
 [html]
 directory = coverage_html_report
