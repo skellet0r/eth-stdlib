@@ -64,3 +64,17 @@ def test_encode_integer(value):
     output = encode(typestr, val)
 
     assert output == val.to_bytes(32, "big", signed=not typestr[0] == "u")
+
+
+def test_encode_static_tuple():
+    output = encode("(uint8,uint8,uint8)", [1, 2, 3])
+
+    assert output == b"".join(map(lambda v: v.to_bytes(32, "big"), [1, 2, 3]))
+
+
+def test_encode_dynamic_tuple():
+    typestr, value = "(uint8,string,uint8)", [1, "Hello World", 2]
+    output = encode(typestr, value)
+
+    expected = b"".join(map(lambda v: v.to_bytes(32, "big"), [1, 0x60, 2, 11]))
+    assert output == expected + "Hello World".encode().ljust(32, b"\x00")
