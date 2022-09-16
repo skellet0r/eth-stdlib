@@ -1,4 +1,5 @@
 import decimal
+from itertools import accumulate
 
 import hypothesis.strategies as st
 import pytest
@@ -7,6 +8,17 @@ from hypothesis import given
 import tests.strategies.abi.nodes as st_nodes
 from eth.codecs.abi import encode, nodes
 from tests.strategies.abi.values import strategy, typestr_and_value
+
+STATIC = (
+    st_nodes.Address
+    | st_nodes.Bool
+    | st.builds(nodes.Bytes, st.integers(1, 32))
+    | st_nodes.Fixed
+    | st_nodes.Integer
+)
+DYNAMIC = st.just(nodes.Bytes(-1)) | st_nodes.String
+STATIC_TUPLE = st.builds(nodes.Tuple, st.builds(tuple, st.lists(STATIC, min_size=1)))
+DYNAMIC_TUPLE = st.builds(nodes.Tuple, st.builds(tuple, st.lists(DYNAMIC, min_size=1)))
 
 
 @given(strategy("address"))
@@ -66,18 +78,29 @@ def test_encode_integer(value):
     assert output == val.to_bytes(32, "big", signed=not typestr[0] == "u")
 
 
-def test_encode_static_tuple():
-    output = encode("(uint8,uint8,uint8)", [1, 2, 3])
+@given(typestr_and_value(STATIC_TUPLE))
+def test_encode_static_tuple(value):
+    typestr, val = value
+    output = encode(typestr, val)
 
-    assert output == b"".join(map(lambda v: v.to_bytes(32, "big"), [1, 2, 3]))
+    typs = typestr[1:-1].split(",")
+    assert output == b"".join([encode(typ, v) for typ, v in zip(typs, val)])
 
 
-def test_encode_dynamic_tuple():
-    typestr, value = "(uint8,string,uint8)", [1, "Hello World", 2]
-    output = encode(typestr, value)
+@given(typestr_and_value(DYNAMIC_TUPLE))
+def test_encode_dynamic_tuple(value):
+    typestr, val = value
+    output = encode(typestr, val)
 
-    expected = b"".join(map(lambda v: v.to_bytes(32, "big"), [1, 0x60, 2, 11]))
-    assert output == expected + "Hello World".encode().ljust(32, b"\x00")
+    typs = typestr[1:-1].split(",")
+
+    # encode each component, they go in the tail section
+    tail = [encode(typ, v) for typ, v in zip(typs, val)]
+    # calculate the offset of each element
+    offsets = [0, *accumulate(map(len, tail))][:-1]
+    head = b"".join([(len(typs) * 32 + o).to_bytes(32, "big") for o in offsets])
+
+    assert output == head + b"".join(tail)
 
 
 def test_encode_static_array():
