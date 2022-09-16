@@ -41,3 +41,8 @@ def test_format_tuple(node):
     inner = ",".join(Formatter.format(c) for c in node.components)
 
     assert Formatter.format(node) == f"({inner})"
+
+
+def test_format_raises_for_non_node_arg():
+    with pytest.raises(TypeError, match="Invalid argument type for node: 'str'"):
+        Formatter.format("foo")
