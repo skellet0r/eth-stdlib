@@ -53,12 +53,12 @@ class Node:
         return 32
 
 
-@dataclass(init=False, slots=True)
+@dataclass(init=False, frozen=True, slots=True)
 class Address(Node):
     """Address Data Type."""
 
 
-@dataclass(slots=True)
+@dataclass(frozen=True, slots=True)
 class Array(Node):
     """Array Data Type.
 
@@ -94,12 +94,12 @@ class Array(Node):
             return 32
 
 
-@dataclass(init=False, slots=True)
+@dataclass(init=False, frozen=True, slots=True)
 class Bool(Node):
     """Boolean Data Type."""
 
 
-@dataclass(slots=True)
+@dataclass(frozen=True, slots=True)
 class Bytes(Node):
     """Byte Array Data Type.
 
@@ -117,7 +117,7 @@ class Bytes(Node):
         return self.size == -1
 
 
-@dataclass(slots=True)
+@dataclass(frozen=True, slots=True)
 class Fixed(Node):
     """Fixed-Point Decimal Data Type.
 
@@ -137,7 +137,7 @@ class Fixed(Node):
     is_signed: bool
 
 
-@dataclass(slots=True)
+@dataclass(frozen=True, slots=True)
 class Integer(Node):
     """Integer Data Type.
 
@@ -154,7 +154,7 @@ class Integer(Node):
     is_signed: bool
 
 
-@dataclass(init=False, slots=True)
+@dataclass(init=False, frozen=True, slots=True)
 class String(Node):
     """String Data Type."""
 
@@ -163,7 +163,7 @@ class String(Node):
         return True
 
 
-@dataclass(slots=True)
+@dataclass(frozen=True, slots=True)
 class Tuple(Node):
     """Tuple Data Type.
 
@@ -174,15 +174,15 @@ class Tuple(Node):
         components: Ordered sequence of data types which the tuple is composed of.
     """
 
-    components: list[Node]
+    components: tuple[Node, ...]
 
     @cached_property
-    def is_dynamic(self):
+    def is_dynamic(self) -> bool:
         return any((elem.is_dynamic for elem in self.components))
 
     @cache
     def __len__(self) -> int:
         if not self.is_dynamic:
             # each element is concatenated and placed in the head
-            return sum([len(elem) for elem in self.components])
+            return sum(map(len, self.components))
         return 32
