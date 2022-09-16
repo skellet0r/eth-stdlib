@@ -74,13 +74,13 @@ class Parser:
                             typestr, f"'{precision}' is not a valid fixed point precision"
                         )
                     return nodes.Fixed(size, precision, typestr[0] != "u")
-                case 4:  # integer
+                case _:  # integer
                     if (size := int(mo[4])) not in range(8, 264, 8):
                         raise ParseError(typestr, f"'{size}' is not a valid integer width")
                     return nodes.Integer(size, typestr[0] != "u")
 
         # array
-        if (mo := cls.ARRAY_PATTERN.fullmatch(typestr)) is not None:
+        elif (mo := cls.ARRAY_PATTERN.fullmatch(typestr)) is not None:
             subtype, size = mo[1], int(mo[2] or -1)  # if mo[2] is None the array is dynamic
             if size == 0:
                 raise ParseError(typestr, "'0' is not a valid array size")
@@ -88,7 +88,7 @@ class Parser:
             return nodes.Array(cls.parse(subtype), size)
 
         # tuple
-        if cls.TUPLE_PATTERN.fullmatch(typestr) is not None:
+        elif cls.TUPLE_PATTERN.fullmatch(typestr) is not None:
             # goal: split the type string on commas while preserving any component tuples
             components, compstr = [], typestr[1:-1]
             depth, lastpos = 0, 0  # keep track of nested tuples
@@ -98,7 +98,7 @@ class Parser:
                         depth += 1
                     case ")":  # tuple end
                         depth -= 1
-                    case "," if depth == 0:  # component separator
+                    case _ if depth == 0:  # component separator
                         # append the component substring from lastpos up to the comma
                         components.append(compstr[lastpos : mo.start()])
                         lastpos = mo.end()  # set lastpos after the comma
