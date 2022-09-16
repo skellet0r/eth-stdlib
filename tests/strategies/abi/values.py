@@ -3,6 +3,7 @@ import decimal
 import hypothesis.strategies as st
 
 from eth.codecs.abi import nodes
+from eth.codecs.abi.formatter import Formatter
 from eth.codecs.abi.parser import Parser
 
 
@@ -87,3 +88,9 @@ def strategy(draw: st.DrawFn, typestr: str | st.SearchStrategy):
         # user provided typestr
         return draw(StrategyMaker.make_strategy(Parser.parse(typestr)))
     return draw(StrategyMaker.make_strategy(draw(typestr)))
+
+
+@st.composite
+def typestr_and_value(draw: st.DrawFn, st_node: st.SearchStrategy):
+    node = draw(st_node)
+    return Formatter.format(node), draw(StrategyMaker.make_strategy(node))
