@@ -110,7 +110,7 @@ class Parser:
                 raise ParseError(typestr, "Dangling comma detected in type string")
 
             # recurse and parse components
-            return nodes.Tuple([cls.parse(component) for component in components])
+            return nodes.Tuple(tuple([cls.parse(component) for component in components]))
 
         # none of the above matching was successful, raise since we can't parse `typestr`
         raise ParseError(typestr, "ABI type not parseable")
