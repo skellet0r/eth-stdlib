@@ -1,6 +1,6 @@
 import hypothesis.strategies as st
 import pytest
-from hypothesis import assume, given, settings
+from hypothesis import assume, given
 
 from eth.codecs.abi.exceptions import ParseError
 from eth.codecs.abi.formatter import Formatter
@@ -48,7 +48,6 @@ def test_parse_invalid_tuple_typestr_raises():
         Parser.parse("(aa,bb,)")
 
 
-@settings(max_examples=5)
 @given(st.text(max_size=128))
 def test_parse_invalid_typestr_raises(typestr):
     assume(typestr not in ("bytes", "string", "address", "bool"))
