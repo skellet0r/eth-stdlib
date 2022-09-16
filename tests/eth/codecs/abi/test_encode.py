@@ -18,8 +18,8 @@ STATIC = (
 )
 DYNAMIC = st.just(nodes.Bytes(-1)) | st_nodes.String
 
-STATIC_TUPLE = st.builds(nodes.Tuple, st.builds(tuple, st.lists(STATIC, min_size=1)))
-DYNAMIC_TUPLE = st.builds(nodes.Tuple, st.builds(tuple, st.lists(DYNAMIC, min_size=1)))
+STATIC_TUPLE = st.builds(nodes.Tuple, st.builds(tuple, st.lists(STATIC, min_size=1, max_size=10)))
+DYNAMIC_TUPLE = st.builds(nodes.Tuple, st.builds(tuple, st.lists(DYNAMIC, min_size=1, max_size=10)))
 
 STATIC_STATIC_ARRAY = st.builds(nodes.Array, STATIC, st.integers(1, 10))
 DYNAMIC_STATIC_ARRAY = st.builds(nodes.Array, STATIC, st.just(-1))
