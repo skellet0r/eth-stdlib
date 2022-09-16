@@ -17,8 +17,15 @@ STATIC = (
     | st_nodes.Integer
 )
 DYNAMIC = st.just(nodes.Bytes(-1)) | st_nodes.String
+
 STATIC_TUPLE = st.builds(nodes.Tuple, st.builds(tuple, st.lists(STATIC, min_size=1)))
 DYNAMIC_TUPLE = st.builds(nodes.Tuple, st.builds(tuple, st.lists(DYNAMIC, min_size=1)))
+
+STATIC_STATIC_ARRAY = st.builds(nodes.Array, STATIC, st.integers(1, 10))
+DYNAMIC_STATIC_ARRAY = st.builds(nodes.Array, STATIC, st.just(-1))
+
+STATIC_DYNAMIC_ARRAY = st.builds(nodes.Array, DYNAMIC, st.integers(1, 10))
+DYNAMIC_DYNAMIC_ARRAY = st.builds(nodes.Array, DYNAMIC, st.just(-1))
 
 
 @given(strategy("address"))
@@ -103,34 +110,52 @@ def test_encode_dynamic_tuple(value):
     assert output == head + b"".join(tail)
 
 
-def test_encode_static_array():
-    output = encode("uint8[3]", [1, 2, 3])
+@given(typestr_and_value(STATIC_STATIC_ARRAY))
+def test_encode_static_array(value):
+    typestr, val = value
+    output = encode(typestr, val)
 
-    assert output == b"".join(map(lambda v: v.to_bytes(32, "big"), [1, 2, 3]))
+    subtype = typestr.split("[")[0]
 
-
-def test_encode_dynamic_array():
-    output = encode("uint8[]", [1, 2, 3])
-
-    expected = b"".join(map(lambda v: v.to_bytes(32, "big"), [3, 1, 2, 3]))
-    assert output == expected
+    assert output == b"".join([encode(subtype, v) for v in val])
 
 
-def test_encode_static_with_dynamic_elements_array():
-    output = encode("string[2]", ["Hello", "World"])
+@given(typestr_and_value(DYNAMIC_STATIC_ARRAY))
+def test_encode_dynamic_array(value):
+    typestr, val = value
+    output = encode(typestr, val)
 
-    expected = b"".join(map(lambda v: v.to_bytes(32, "big"), [0x40, 0x80, 5]))
-    expected += "Hello".encode().ljust(32, b"\x00") + (5).to_bytes(32, "big")
-    expected += "World".encode().ljust(32, b"\x00")
+    subtype = typestr.split("[")[0]
+    expected = len(val).to_bytes(32, "big") + b"".join([encode(subtype, v) for v in val])
 
     assert output == expected
 
 
-def test_encode_dynamic_with_dynamic_elements_array():
-    output = encode("string[]", ["Hello", "World"])
+@given(typestr_and_value(STATIC_DYNAMIC_ARRAY))
+def test_encode_static_with_dynamic_elements_array(value):
+    typestr, val = value
+    output = encode(typestr, val)
 
-    expected = b"".join(map(lambda v: v.to_bytes(32, "big"), [2, 0x40, 0x80, 5]))
-    expected += "Hello".encode().ljust(32, b"\x00") + (5).to_bytes(32, "big")
-    expected += "World".encode().ljust(32, b"\x00")
+    subtype = typestr.split("[")[0]
+    # encode each component, they go in the tail section
+    tail = [encode(subtype, v) for v in val]
+    # calculate the offset of each element
+    offsets = [0, *accumulate(map(len, tail))][:-1]
+    head = b"".join([(len(val) * 32 + o).to_bytes(32, "big") for o in offsets])
 
-    assert output == expected
+    assert output == head + b"".join(tail)
+
+
+@given(typestr_and_value(DYNAMIC_DYNAMIC_ARRAY))
+def test_encode_dynamic_with_dynamic_elements_array(value):
+    typestr, val = value
+    output = encode(typestr, val)
+
+    subtype = typestr.split("[")[0]
+    # encode each component, they go in the tail section
+    tail = [encode(subtype, v) for v in val]
+    # calculate the offset of each element
+    offsets = [0, *accumulate(map(len, tail))][:-1]
+    head = b"".join([(len(val) * 32 + o).to_bytes(32, "big") for o in offsets])
+
+    assert output == len(val).to_bytes(32, "big") + head + b"".join(tail)
