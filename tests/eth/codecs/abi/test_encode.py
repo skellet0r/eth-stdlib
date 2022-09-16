@@ -1,7 +1,10 @@
+import decimal
+
 import hypothesis.strategies as st
 import pytest
 from hypothesis import given
 
+import tests.strategies.abi.nodes as st_nodes
 from eth.codecs.abi import encode, nodes
 from tests.strategies.abi.values import strategy, typestr_and_value
 
@@ -42,3 +45,14 @@ def test_encode_string(value):
 def test_encode_static_bytes(value):
     typestr, val = value
     assert encode(typestr, val) == val.ljust(32, b"\x00")
+
+
+@given(typestr_and_value(st_nodes.Fixed))
+def test_encode_fixed_point(value):
+    typestr, val = value
+    output = encode(typestr, val)
+
+    precision = int(typestr.rsplit("x", 1)[-1])
+    with decimal.localcontext(decimal.Context(prec=128)):
+        scaled_val = int(val.scaleb(precision).to_integral_exact())
+    assert output == scaled_val.to_bytes(32, "big", signed=not typestr[0] == "u")
