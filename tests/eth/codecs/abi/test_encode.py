@@ -78,3 +78,36 @@ def test_encode_dynamic_tuple():
 
     expected = b"".join(map(lambda v: v.to_bytes(32, "big"), [1, 0x60, 2, 11]))
     assert output == expected + "Hello World".encode().ljust(32, b"\x00")
+
+
+def test_encode_static_array():
+    output = encode("uint8[3]", [1, 2, 3])
+
+    assert output == b"".join(map(lambda v: v.to_bytes(32, "big"), [1, 2, 3]))
+
+
+def test_encode_dynamic_array():
+    output = encode("uint8[]", [1, 2, 3])
+
+    expected = b"".join(map(lambda v: v.to_bytes(32, "big"), [3, 1, 2, 3]))
+    assert output == expected
+
+
+def test_encode_static_with_dynamic_elements_array():
+    output = encode("string[2]", ["Hello", "World"])
+
+    expected = b"".join(map(lambda v: v.to_bytes(32, "big"), [0x40, 0x80, 5]))
+    expected += "Hello".encode().ljust(32, b"\x00") + (5).to_bytes(32, "big")
+    expected += "World".encode().ljust(32, b"\x00")
+
+    assert output == expected
+
+
+def test_encode_dynamic_with_dynamic_elements_array():
+    output = encode("string[]", ["Hello", "World"])
+
+    expected = b"".join(map(lambda v: v.to_bytes(32, "big"), [2, 0x40, 0x80, 5]))
+    expected += "Hello".encode().ljust(32, b"\x00") + (5).to_bytes(32, "big")
+    expected += "World".encode().ljust(32, b"\x00")
+
+    assert output == expected
