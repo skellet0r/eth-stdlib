@@ -7,6 +7,7 @@ from hypothesis import given
 
 import tests.strategies.abi.nodes as st_nodes
 from eth.codecs.abi import encode, nodes
+from eth.codecs.abi.encoder import Encoder
 from eth.codecs.abi.exceptions import EncodeError
 from tests.strategies.abi.values import strategy, typestr_and_value
 
@@ -144,6 +145,11 @@ def test_encode_dynamic_with_dynamic_elements_array(value):
     assert output == len(val).to_bytes(32, "big") + head + b"".join(tail)
 
 
+def test_encoding_invalid_node_type_raises():
+    with pytest.raises(TypeError, match="Invalid argument type for node"):
+        Encoder.encode("foo", "foo")
+
+
 def test_encoding_invalid_address_value_raises():
     for value in [b"", 123]:
         with pytest.raises(EncodeError, match="Value is not an instance of type 'str'"):
@@ -154,3 +160,11 @@ def test_encoding_invalid_address_value_raises():
 
     with pytest.raises(EncodeError, match="Value is not 20 bytes"):
         encode("address", "0x1234567890abcdef")
+
+
+def test_encoding_invalid_array_value_raises():
+    with pytest.raises(EncodeError, match=r"Value is not a list \| tuple type"):
+        encode("uint256[]", {})
+
+    with pytest.raises(EncodeError, match="Expected value of size 3"):
+        encode("uint256[3]", [1, 2])
