@@ -168,7 +168,8 @@ class Encoder:
         # calculate type bounds
         lo, hi = 0, 2**node.size - 1
         if node.is_signed:
-            lo, hi = lo - 2 ** (node.size - 1), hi - 2 ** (node.size - 1)
+            subtrahend = 2 ** (node.size - 1)
+            lo, hi = lo - subtrahend, hi - subtrahend
 
         try:
             assert isinstance(value, int), "Value not an instance of type 'int'"

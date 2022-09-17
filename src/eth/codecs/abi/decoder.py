@@ -160,7 +160,8 @@ class Decoder:
             # calculate type bounds
             lo, hi = 0, 2**node.size - 1
             if node.is_signed:
-                lo, hi = -(2 ** (node.size - 1)), 2 ** (node.size - 1) - 1
+                subtrahend = 2 ** (node.size - 1)
+                lo, hi = lo - subtrahend, hi - subtrahend
 
             # convert the bytes to an integer
             ival = int.from_bytes(value, "big", signed=node.is_signed)
