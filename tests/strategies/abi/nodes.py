@@ -23,6 +23,22 @@ String = st.just(nodes.String())
 # all atomic types
 Atomic = st.one_of(Address, Bool, Bytes, Fixed, Integer, String)
 
+# static types, occupy 32 bytes
+Static = Address | Bool | st.builds(nodes.Bytes, st.integers(1, 32)) | Fixed | Integer
+# dynamic types, occupy 32 bytes at minimum
+Dynamic = st.just(nodes.Bytes(-1)) | String
+
+# variations of array types
+SS_Array = st.builds(nodes.Array, Static, st.integers(1, 10))
+DS_Array = st.builds(nodes.Array, Static, st.just(-1))
+
+SD_Array = st.builds(nodes.Array, Dynamic, st.integers(1, 10))
+DD_Array = st.builds(nodes.Array, Dynamic, st.just(-1))
+
+# variation of tuple types
+S_Tuple = st.builds(nodes.Tuple, st.builds(tuple, st.lists(Static, min_size=1, max_size=10)))
+D_Tuple = st.builds(nodes.Tuple, st.builds(tuple, st.lists(Dynamic, min_size=1, max_size=10)))
+
 
 @st.deferred
 def Array():

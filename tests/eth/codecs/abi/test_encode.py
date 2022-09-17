@@ -10,24 +10,6 @@ from eth.codecs.abi import encode, nodes
 from eth.codecs.abi.exceptions import EncodeError
 from tests.strategies.abi.values import strategy, typestr_and_value
 
-STATIC = (
-    st_nodes.Address
-    | st_nodes.Bool
-    | st.builds(nodes.Bytes, st.integers(1, 32))
-    | st_nodes.Fixed
-    | st_nodes.Integer
-)
-DYNAMIC = st.just(nodes.Bytes(-1)) | st_nodes.String
-
-STATIC_TUPLE = st.builds(nodes.Tuple, st.builds(tuple, st.lists(STATIC, min_size=1, max_size=10)))
-DYNAMIC_TUPLE = st.builds(nodes.Tuple, st.builds(tuple, st.lists(DYNAMIC, min_size=1, max_size=10)))
-
-STATIC_STATIC_ARRAY = st.builds(nodes.Array, STATIC, st.integers(1, 10))
-DYNAMIC_STATIC_ARRAY = st.builds(nodes.Array, STATIC, st.just(-1))
-
-STATIC_DYNAMIC_ARRAY = st.builds(nodes.Array, DYNAMIC, st.integers(1, 10))
-DYNAMIC_DYNAMIC_ARRAY = st.builds(nodes.Array, DYNAMIC, st.just(-1))
-
 
 @given(strategy("address"))
 def test_encode_address(value):
@@ -86,7 +68,7 @@ def test_encode_integer(value):
     assert output == val.to_bytes(32, "big", signed=not typestr[0] == "u")
 
 
-@given(typestr_and_value(STATIC_TUPLE))
+@given(typestr_and_value(st_nodes.S_Tuple))
 def test_encode_static_tuple(value):
     typestr, val = value
     output = encode(typestr, val)
@@ -95,7 +77,7 @@ def test_encode_static_tuple(value):
     assert output == b"".join([encode(typ, v) for typ, v in zip(typs, val)])
 
 
-@given(typestr_and_value(DYNAMIC_TUPLE))
+@given(typestr_and_value(st_nodes.D_Tuple))
 def test_encode_dynamic_tuple(value):
     typestr, val = value
     output = encode(typestr, val)
@@ -111,7 +93,7 @@ def test_encode_dynamic_tuple(value):
     assert output == head + b"".join(tail)
 
 
-@given(typestr_and_value(STATIC_STATIC_ARRAY))
+@given(typestr_and_value(st_nodes.SS_Array))
 def test_encode_static_array(value):
     typestr, val = value
     output = encode(typestr, val)
@@ -121,7 +103,7 @@ def test_encode_static_array(value):
     assert output == b"".join([encode(subtype, v) for v in val])
 
 
-@given(typestr_and_value(DYNAMIC_STATIC_ARRAY))
+@given(typestr_and_value(st_nodes.DS_Array))
 def test_encode_dynamic_array(value):
     typestr, val = value
     output = encode(typestr, val)
@@ -132,7 +114,7 @@ def test_encode_dynamic_array(value):
     assert output == expected
 
 
-@given(typestr_and_value(STATIC_DYNAMIC_ARRAY))
+@given(typestr_and_value(st_nodes.SD_Array))
 def test_encode_static_with_dynamic_elements_array(value):
     typestr, val = value
     output = encode(typestr, val)
@@ -147,7 +129,7 @@ def test_encode_static_with_dynamic_elements_array(value):
     assert output == head + b"".join(tail)
 
 
-@given(typestr_and_value(DYNAMIC_DYNAMIC_ARRAY))
+@given(typestr_and_value(st_nodes.DD_Array))
 def test_encode_dynamic_with_dynamic_elements_array(value):
     typestr, val = value
     output = encode(typestr, val)
