@@ -1,4 +1,5 @@
 import decimal
+import functools
 
 import hypothesis.strategies as st
 
@@ -11,6 +12,7 @@ class StrategyMaker:
     """ABI value strategy maker."""
 
     @classmethod
+    @functools.cache
     def make_strategy(cls, node: nodes.Node) -> st.SearchStrategy:
         """Create a hypothesis search strategy for a given ABI type.
 
