@@ -171,16 +171,12 @@ class Encoder:
             lo, hi = lo - 2 ** (node.size - 1), hi - 2 ** (node.size - 1)
 
         try:
+            assert isinstance(value, int), "Value not an instance of type 'int'"
             # validate value fits in type and is of type int
             assert lo <= value <= hi, "Value outside type bounds"
-            assert isinstance(value, int), "Value not an instance of type 'int'"
         except AssertionError as e:
             # value can be a float, in which case it's not valid
             raise EncodeError(Formatter.format(node), value, e.args[0]) from e
-        except TypeError as e:
-            raise EncodeError(
-                Formatter.format(node), value, "Value not an instance of type 'int'"
-            ) from e
 
         return value.to_bytes(32, "big", signed=node.is_signed)
 
