@@ -168,3 +168,48 @@ def test_encoding_invalid_array_value_raises():
 
     with pytest.raises(EncodeError, match="Expected value of size 3"):
         encode("uint256[3]", [1, 2])
+
+
+def test_encoding_invalid_bool_value_raises():
+    with pytest.raises(EncodeError, match="Value is not an instance of type 'bool'"):
+        encode("bool", 1)
+
+
+def test_encoding_invalid_bytes_value_raises():
+    with pytest.raises(EncodeError, match="Value is not an instance of type 'bytes'"):
+        encode("bytes", "")
+
+    with pytest.raises(EncodeError, match="Value is not 4 bytes"):
+        encode("bytes4", b"abcdefghi")
+
+
+def test_encoding_invalid_fixed_value_raises():
+    with pytest.raises(EncodeError, match="Value is not an instance of type 'decimal.Decimal'"):
+        encode("fixed168x10", 1.2344)
+
+    with pytest.raises(EncodeError, match="Value outside type bounds"):
+        encode("ufixed168x10", decimal.Decimal("-1"))
+
+    with pytest.raises(EncodeError, match="Precision of value is greater than allowed"):
+        encode("ufixed168x5", decimal.Decimal("1.2345566666"))
+
+
+def test_encoding_invalid_integer_value_raises():
+    with pytest.raises(EncodeError, match="Value outside type bounds"):
+        encode("uint256", -1)
+
+    with pytest.raises(EncodeError, match="Value not an instance of type 'int'"):
+        encode("uint256", "")
+
+
+def test_encoding_invalid_string_value_raises():
+    with pytest.raises(EncodeError, match="Value is not an instance of type 'str'"):
+        encode("string", b"")
+
+
+def test_encoding_invalid_tuple_value_raises():
+    with pytest.raises(EncodeError, match=r"Value is not a list \| tuple type"):
+        encode("(string)", set(["", "Hello"]))
+
+    with pytest.raises(EncodeError, match=r"Expected value of size 1"):
+        encode("(string)", ("", ""))
