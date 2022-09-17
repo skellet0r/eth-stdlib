@@ -199,7 +199,7 @@ class Decoder:
         # for each pointer copy the data from the dynamic section similar to array decoding
         data = deque([value[a:b] for a, b in zip(ptrs, ptrs[1:])] + [value[ptrs[-1] :]])
         # replace each ptr with its data - generator
-        head = (data.popleft() if typ.is_dynamic else val for typ, val in typ_and_vals)
+        head = [data.popleft() if typ.is_dynamic else val for typ, val in typ_and_vals]
 
         # return the decoded elements
         return tuple([cls.decode(typ, val) for typ, val in zip(node.components, head)])
