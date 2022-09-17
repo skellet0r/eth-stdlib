@@ -5,10 +5,6 @@ branch = True
 
 [report]
 ignore_errors = True
-skip_empty = True
 show_missing = True
-skip_covered = True
-sort = -cover
-
-[html]
-directory = coverage_html_report
+skip_empty = True
+sort = cover
