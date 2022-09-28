@@ -1,0 +1,19 @@
+name: test
+
+on: [pull_request, push]
+
+jobs:
+  main:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install poetry
+        run: |
+          pip install -U pip setuptools pipx
+          pipx install poetry
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+          cache: 'poetry'
+      - run: poetry install --sync
+      - run: poetry run pytest
