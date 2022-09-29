@@ -14,175 +14,193 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 
-from dataclasses import dataclass
-from functools import cache, cached_property
-from typing import Any, Literal
+import decimal
+import functools
+from dataclasses import dataclass, field
+from typing import Any
 
 
-class Node:
-    """ABI type node base class.
+@dataclass(init=False)
+class ABITypeNode:
+    """Base class for ABI type nodes.
 
-    Note:
-        Visitor classes should implement the appropriate 'visit_{ClassName}' methods.
+    Attributes:
+        width: The number of bytes the encoded type occupies in the static data section.
+        is_dynamic: Indicator denoting whether the type is dynamic or not.
     """
 
-    def accept(self, visitor: object, *args, **kwargs) -> Any:
-        """Accept a visitor and call the appropriate visit method on it.
+    width: int = field(default=32, init=False, repr=False)
+    is_dynamic: bool = field(default=False, init=False, repr=False)
+
+    def accept(self, visitor: object, *args: Any, **kwargs: Any) -> Any:
+        """Accept a visitor.
 
         Parameters:
-            visitor: Object to call visit method on.
-            *args: Additional positional arguments to pass to the visit function.
-            **kwargs: Additional keyword arguments to pass to the visit function.
-
-        Returns:
-            The output of the visit method on the visitor.
-
-        Raises:
-            AttributeError: If visitor does not have the appropriate visit method required defined.
+            visitor: An object with visit methods.
+            *args: Variable length argument list passed to the visit method.
+            **kwargs: Arbitrary keyword arguments passed to the visit method.
         """
         fn = getattr(visitor, f"visit_{self.__class__.__name__}")
         return fn(self, *args, **kwargs)
 
-    @cached_property
-    def is_dynamic(self) -> bool:
-        """Indicates if the data type instance is considered dynamic."""
-        return False
 
-    def __len__(self) -> int:
-        """Expected bytes the encoded element will occupy in the head of a tuple or array."""
-        return 32
+@dataclass(init=False)
+class AddressNode(ABITypeNode):
+    """Address ABI type node."""
 
 
-@dataclass(init=False, frozen=True, slots=True)
-class Address(Node):
-    """Address Data Type."""
-
-
-@dataclass(frozen=True, slots=True)
-class Array(Node):
-    """Array Data Type.
+@dataclass
+class ArrayNode(ABITypeNode):
+    """Array ABI type node.
 
     Parameters:
-        subtype: The data type of array elements.
-        size: The size of the array. -1 if the array is dynamically sized.
+        etype: The element type of the array.
+        length: The number of elements in the array or ``None`` if the array is dynamic.
 
     Attributes:
-        subtype: The data type of array elements.
-        size: The size of the array. -1 if the array is dynamically sized.
+        etype: The element type of the array.
+        length: The number of elements in the array or ``None`` if the array is dynamic.
     """
 
-    subtype: Node
-    size: int
+    etype: ABITypeNode
+    length: int | None = None
 
-    @cached_property
-    def is_dynamic(self) -> bool:
-        return self.size == -1 or self.subtype.is_dynamic
-
-    @cache
-    def __len__(self) -> int:
-        if not self.is_dynamic:
-            # 1) static array, w/ static elements
-            # each element is concatenated so the total size of the array is the product of the
-            # subtype's width * the number of elements in the array
-            return len(self.subtype) * self.size
+    def __post_init__(self):
+        if self.etype.is_dynamic or self.length is None:
+            self.is_dynamic = True
         else:
-            # 2) dynamic array, w/ static elements - ptr
-            # 3) static array, w/ dynamic elements - ptr
-            # 4) dynamic array, w/ dynamic elements - ptr
-            # all types which are dynamic or contain dynamic components get stored in the tail
-            # and a pointer is placed in the head
-            return 32
+            self.width = self.etype.width * self.length
 
 
-@dataclass(init=False, frozen=True, slots=True)
-class Bool(Node):
-    """Boolean Data Type."""
+@dataclass(init=False)
+class BooleanNode(ABITypeNode):
+    """Boolean ABI type node."""
 
 
-@dataclass(frozen=True, slots=True)
-class Bytes(Node):
-    """Byte Array Data Type.
+@dataclass
+class BytesNode(ABITypeNode):
+    """Bytes ABI type node.
 
     Parameters:
-        size: The size of the byte array. -1 if the byte array is dynamically sized.
+        size: The number of bytes the type utilizes, or ``None`` if the type is not a fixed width.
 
     Attributes:
-        size: The size of the byte array. -1 if the byte array is dynamically sized.
+        size: The number of bytes the type utilizes, or ``None`` if the type is not a fixed width.
     """
 
-    size: int
+    size: int | None
 
-    @cached_property
-    def is_dynamic(self) -> bool:
-        return self.size == -1
+    def __post_init__(self):
+        self.is_dynamic = self.size is None
 
 
-@dataclass(frozen=True, slots=True)
-class Fixed(Node):
-    """Fixed-Point Decimal Data Type.
+@dataclass
+class IntegerNode(ABITypeNode):
+    """Integer ABI type node.
 
     Parameters:
-        size: The number of bits utilized by the data type.
-        precision: The number of decimal points available.
-        is_signed: True if the data type is signed, False otherwise.
+        bits: The number of bits the type utilizes.
+        is_signed: Indicator denoting whether the type is signed using two's complement.
 
     Attributes:
-        size: The number of bits utilized by the data type.
-        precision: The number of decimal points available.
-        is_signed: True if the data type is signed, False otherwise.
+        bits: The number of bits the type utilizes.
+        is_signed: Indicator denoting whether the type is signed using two's complement.
     """
 
-    size: int
+    bits: int
+    is_signed: bool = False
+
+    @property
+    def bounds(self) -> tuple[int, int]:
+        """Get the lower and upper integer bounds of the type.
+
+        Returns:
+            A tuple with the lower and upper bounds of the type.
+        """
+        return self._calculate_bounds(self.bits, self.is_signed)
+
+    @staticmethod
+    @functools.cache
+    def _calculate_bounds(bits: int, is_signed: bool = False) -> tuple[int, int]:
+        """Calculate integer bounds.
+
+        Parameters:
+            bits: The number of bits the type utilizes.
+            is_signed: Whether to calculate the bounds of a signed integer or not.
+        """
+        lo, hi = 0, 2**bits - 1
+        if is_signed:
+            lo -= 2 ** (bits - 1)
+            hi += lo
+        return lo, hi
+
+
+@dataclass
+class FixedNode(ABITypeNode):
+    """Fixed point decimal ABI type node.
+
+    Parameters:
+        bits: The number of bits the type utilizes.
+        precision: The number of decimal places the type utilizes.
+        is_signed: Indicator denoting whether the type is signed using two's complement.
+
+    Attributes:
+        bits: The number of bits the type utilizes.
+        precision: The number of decimal places the type utilizes.
+        is_signed: Indicator denoting whether the type is signed using two's complement.
+    """
+
+    bits: int
     precision: int
-    is_signed: bool
+    is_signed: bool = False
+
+    @property
+    def bounds(self) -> tuple[decimal.Decimal, decimal.Decimal]:
+        """Get the lower and upper fixed point decimal bounds of the type.
+
+        Returns:
+            A tuple with the lower and upper bounds of the type.
+        """
+        return self._calculate_bounds(self.bits, self.precision, self.is_signed)
+
+    @staticmethod
+    @functools.cache
+    def _calculate_bounds(
+        bits: int, precision: int, is_signed: bool = False
+    ) -> tuple[decimal.Decimal, decimal.Decimal]:
+        """Calculate fixed point decimal bounds.
+
+        Parameters:
+            bits: The number of bits the type utilizes.
+            precision: The number of decimal places the type utilizes.
+            is_signed: Whether to calculate the bounds of a signed integer or not.
+        """
+        ilo, ihi = IntegerNode._calculate_bounds(bits, is_signed)
+        with decimal.localcontext(decimal.Context(prec=80)):
+            return decimal.Decimal(ilo).scaleb(-precision), decimal.Decimal(ihi).scaleb(-precision)
 
 
-@dataclass(frozen=True, slots=True)
-class Integer(Node):
-    """Integer Data Type.
+@dataclass(init=False)
+class StringNode(ABITypeNode):
+    """String ABI type node."""
+
+    is_dynamic: bool = True
+
+
+@dataclass
+class TupleNode(ABITypeNode):
+    """Tuple ABI type node.
 
     Parameters:
-        size: The number of bits utilized by the data type.
-        is_signed: True if the data type is signed, False otherwise.
+        ctypes: The components types of the type.
 
     Attributes:
-        size: The number of bits utilized by the data type.
-        is_signed: True if the data type is signed, False otherwise.
+        ctypes: The components types of the type.
     """
+    ctypes: tuple[ABITypeNode, ...]
 
-    size: int
-    is_signed: bool
-
-
-@dataclass(init=False, frozen=True, slots=True)
-class String(Node):
-    """String Data Type."""
-
-    @cached_property
-    def is_dynamic(self) -> Literal[True]:
-        return True
-
-
-@dataclass(frozen=True, slots=True)
-class Tuple(Node):
-    """Tuple Data Type.
-
-    Parameters:
-        components: Ordered sequence of data types which the tuple is composed of.
-
-    Attributes:
-        components: Ordered sequence of data types which the tuple is composed of.
-    """
-
-    components: tuple[Node, ...]
-
-    @cached_property
-    def is_dynamic(self) -> bool:
-        return any((elem.is_dynamic for elem in self.components))
-
-    @cache
-    def __len__(self) -> int:
-        if not self.is_dynamic:
-            # each element is concatenated and placed in the head
-            return sum(map(len, self.components))
-        return 32
+    def __post_init__(self):
+        if any((typ.is_dynamic for typ in self.ctypes)):
+            self.is_dynamic = True
+        else:
+            self.width = sum((typ.width for typ in self.ctypes))
