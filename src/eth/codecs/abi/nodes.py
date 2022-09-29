@@ -92,13 +92,15 @@ class BytesNode(ABITypeNode):
     """Bytes ABI type node.
 
     Parameters:
-        size: The number of bytes the type utilizes, or ``None`` if the type is not a fixed width.
+        size: The number of bytes the type utilizes, or ``None`` if the type does not have a fixed
+            width.
 
     Attributes:
-        size: The number of bytes the type utilizes, or ``None`` if the type is not a fixed width.
+        size: The number of bytes the type utilizes, or ``None`` if the type does not have a fixed
+            width.
     """
 
-    size: int | None
+    size: int | None = None
 
     def __post_init__(self):
         self.is_dynamic = self.size is None
@@ -141,6 +143,9 @@ class IntegerNode(ABITypeNode):
         Parameters:
             bits: The number of bits the type utilizes.
             is_signed: Whether to calculate the bounds of a signed integer or not.
+        
+        Returns:
+            A tuple with the calculated lower and upper bounds. 
         """
         lo, hi = 0, 2**bits - 1
         if is_signed:
@@ -166,6 +171,7 @@ class FixedNode(ABITypeNode):
         bits: The number of bits the type utilizes.
         precision: The number of decimal places the type utilizes.
         is_signed: Indicator denoting whether the type is signed using two's complement.
+    
     """
 
     bits: int
@@ -192,6 +198,9 @@ class FixedNode(ABITypeNode):
             bits: The number of bits the type utilizes.
             precision: The number of decimal places the type utilizes.
             is_signed: Whether to calculate the bounds of a signed integer or not.
+
+        Returns:
+            A tuple with the calculated lower and upper bounds. 
         """
         ilo, ihi = IntegerNode._calculate_bounds(bits, is_signed)
         with decimal.localcontext(decimal.Context(prec=80)):
