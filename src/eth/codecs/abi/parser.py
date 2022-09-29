@@ -21,13 +21,15 @@ from eth.codecs.abi.exceptions import ParseError
 
 
 class Parser:
-    """Ethereum ABI type string parser.
+    """Ethereum contract ABI schema parser.
 
     Attributes:
-        ARRAY_PATTERN: compiled regex for matching array type strings.
-        TUPLE_PATTERN: compiled regex for matching tuple type strings.
-        VALUE_PATTERN: compiled regex for matching value type strings 'bytesN', 'uintN', 'intN',
-            'ufixedMxN', and 'fixedMxN'.
+        ARRAY_PATTERN: compiled regex for matching array schemas.
+        TUPLE_PATTERN: compiled regex for matching tuple schemas.
+        VALUE_PATTERN: compiled regex for matching value schemas:
+            * fixed-width byte arrays
+            * integers
+            * fixed-point decimals
     """
 
     ARRAY_PATTERN = re.compile(r"(.+)\[(\d*)\]")
@@ -35,62 +37,64 @@ class Parser:
     VALUE_PATTERN = re.compile(r"bytes(\d+)|u?(?:fixed(\d+)x(\d+)|int(\d+))")
 
     @classmethod
-    def parse(cls, typestr: str) -> nodes.Node:
-        """Parse a type string into a AST-like strucutre.
+    def parse(cls, schema: str) -> nodes.ABITypeNode:
+        """Parse an ABI schema into a AST.
 
         Parameters:
-            typestr: an ABI type string (i.e. 'uint256', '(bytes32[],ufixed128x10)').
+            schema: an ABI type string, such as:
+                * 'uint256'
+                * '(bytes32,ufixed128x10)'
 
         Returns:
             An AST-like strucutre representing the type string.
 
         Raises:
-            ParseError: If `typestr`, or a component type string of it, is an invalid ABI type.
+            ParseError: If ``schema`` contains an invalid ABI type.
         """
-        # simplest types to match against since they don't require regex magic
-        match typestr:
+        # simplest types to match against since they don't require regex
+        match schema:
             case "address":
-                return nodes.Address()
+                return nodes.AddressNode()
             case "bool":
-                return nodes.Bool()
+                return nodes.BooleanNode()
             case "bytes":
-                return nodes.Bytes(-1)  # -1 denotes dynamic size
+                return nodes.BytesNode()
             case "string":
-                return nodes.String()
+                return nodes.StringNode()
 
         # using fullmatch method to correctly match against the entire string
-        if (mo := cls.VALUE_PATTERN.fullmatch(typestr)) is not None:
+        if (mo := cls.VALUE_PATTERN.fullmatch(schema)) is not None:
             # identify which type was matched, and validate it
             match mo.lastindex:
                 case 1:  # bytes
                     if (size := int(mo[1])) not in range(1, 33):
-                        raise ParseError(typestr, f"'{size}' is not a valid byte array width")
-                    return nodes.Bytes(size)
+                        raise ParseError(schema, f"'{size}' is not a valid byte array width")
+                    return nodes.BytesNode(size)
                 case 3:  # fixed
                     if (size := int(mo[2])) not in range(8, 264, 8):
-                        raise ParseError(typestr, f"'{size}' is not a valid fixed point width")
+                        raise ParseError(schema, f"'{size}' is not a valid fixed point width")
                     elif (precision := int(mo[3])) not in range(81):
                         raise ParseError(
-                            typestr, f"'{precision}' is not a valid fixed point precision"
+                            schema, f"'{precision}' is not a valid fixed point precision"
                         )
-                    return nodes.Fixed(size, precision, typestr[0] != "u")
+                    return nodes.FixedNode(size, precision, schema[0] != "u")
                 case _:  # integer
                     if (size := int(mo[4])) not in range(8, 264, 8):
-                        raise ParseError(typestr, f"'{size}' is not a valid integer width")
-                    return nodes.Integer(size, typestr[0] != "u")
+                        raise ParseError(schema, f"'{size}' is not a valid integer width")
+                    return nodes.IntegerNode(size, schema[0] != "u")
 
         # array
-        elif (mo := cls.ARRAY_PATTERN.fullmatch(typestr)) is not None:
-            subtype, size = mo[1], int(mo[2] or -1)  # if mo[2] is None the array is dynamic
+        elif (mo := cls.ARRAY_PATTERN.fullmatch(schema)) is not None:
+            etype, size = mo[1], int(mo[2]) if mo[2] is not None else None
             if size == 0:
-                raise ParseError(typestr, "'0' is not a valid array size")
-            # recurse and parse the subtype of the array
-            return nodes.Array(cls.parse(subtype), size)
+                raise ParseError(schema, "'0' is not a valid array size")
+            # recurse and parse the element type of the array
+            return nodes.Array(cls.parse(etype), size)
 
         # tuple
-        elif cls.TUPLE_PATTERN.fullmatch(typestr) is not None:
+        elif cls.TUPLE_PATTERN.fullmatch(schema) is not None:
             # goal: split the type string on commas while preserving any component tuples
-            components, compstr = [], typestr[1:-1]
+            components, compstr = [], schema[1:-1]
             depth, lastpos = 0, 0  # keep track of nested tuples
             for mo in re.finditer(r"\(|\)|,", compstr):
                 match mo[0]:
@@ -107,10 +111,10 @@ class Parser:
             components.append(compstr[lastpos:])
             # validate we have no empty components (dangling commas)
             if "" in components:
-                raise ParseError(typestr, "Dangling comma detected in type string")
+                raise ParseError(schema, "Dangling comma detected in type string")
 
             # recurse and parse components
-            return nodes.Tuple(tuple([cls.parse(component) for component in components]))
+            return nodes.TupleNode(tuple((cls.parse(component) for component in components)))
 
-        # none of the above matching was successful, raise since we can't parse `typestr`
-        raise ParseError(typestr, "ABI type not parseable")
+        # none of the above matching was successful, raise since we can't parse `schema`
+        raise ParseError(schema, "ABI type not parseable")
