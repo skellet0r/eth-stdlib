@@ -21,35 +21,35 @@ from eth.codecs.abi.encoder import Encoder
 from eth.codecs.abi.parser import Parser
 
 
-def encode(typestr: str, value: Any) -> bytes:
-    """Encode a value according to an ABI type string.
+def encode(schema: str, value: Any) -> bytes:
+    """Encode a value according to an ABI schema.
 
     Parameters:
-        typestr: An ABI type string (i.e. 'uint256[]', '(uint8,bytes32)').
+        schema: An ABI type string.
         value: The value to encode.
 
     Returns:
         The encoded value.
 
     Raises:
-        EncodeError: if value, or an element thereof, is not encodable.
-        ParseError: if `typestr`, or a sub-string thereof, is an invalid ABI type.
+        EncodeError: If value, or an element thereof, is not encodable.
+        ParseError: If ``schema`` is an invalid ABI type.
     """
-    return Encoder.encode(Parser.parse(typestr), value)
+    return Encoder.encode(Parser.parse(schema), value)
 
 
-def decode(typestr: str, value: bytes) -> Any:
-    """Decode a value according to an ABI type string.
+def decode(schema: str, value: bytes) -> Any:
+    """Decode a value according to an ABI schema.
 
     Parameters:
-        typestr: An ABI type string (i.e. 'uint256[]', '(uint8,bytes32)').
+        schema: An ABI type string.
         value: The value to decode.
 
     Returns:
         The decoded value.
 
     Raises:
-        DecodeError: if value, or an element thereof, is not decodable.
-        ParseError: if `typestr`, or a sub-string thereof, is an invalid ABI type.
+        DecodeError: If value, or an element thereof, is not decodable.
+        ParseError: If ``schema`` is an invalid ABI type.
     """
-    return Decoder.decode(Parser.parse(typestr), value)
+    return Decoder.decode(Parser.parse(schema), value)
