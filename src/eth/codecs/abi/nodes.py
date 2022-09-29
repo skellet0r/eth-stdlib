@@ -48,6 +48,9 @@ class ABITypeNode:
 class AddressNode(ABITypeNode):
     """Address ABI type node."""
 
+    def __str__(self) -> str:
+        return "address"
+
 
 @dataclass
 class ArrayNode(ABITypeNode):
@@ -71,10 +74,17 @@ class ArrayNode(ABITypeNode):
         else:
             self.width = self.etype.width * self.length
 
+    def __str__(self) -> str:
+        suffix = "[]" if self.length is None else f"[{self.length}]"
+        return str(self.etype) + suffix
+
 
 @dataclass(init=False)
 class BooleanNode(ABITypeNode):
     """Boolean ABI type node."""
+
+    def __str__(self) -> str:
+        return "bool"
 
 
 @dataclass
@@ -92,6 +102,10 @@ class BytesNode(ABITypeNode):
 
     def __post_init__(self):
         self.is_dynamic = self.size is None
+    
+    def __str__(self) -> str:
+        suffix = "" if self.size is None else f"{self.size}"
+        return "bytes" + suffix
 
 
 @dataclass
@@ -133,6 +147,10 @@ class IntegerNode(ABITypeNode):
             lo -= 2 ** (bits - 1)
             hi += lo
         return lo, hi
+
+    def __str__(self) -> str:
+        prefix = "" if self.is_signed else "u"
+        return prefix + f"int{self.bits}"
 
 
 @dataclass
@@ -179,12 +197,19 @@ class FixedNode(ABITypeNode):
         with decimal.localcontext(decimal.Context(prec=80)):
             return decimal.Decimal(ilo).scaleb(-precision), decimal.Decimal(ihi).scaleb(-precision)
 
+    def __str__(self) -> str:
+        prefix = "" if self.is_signed else "u"
+        return prefix + f"fixed{self.bits}x{self.precision}"
+
 
 @dataclass(init=False)
 class StringNode(ABITypeNode):
     """String ABI type node."""
 
     is_dynamic: bool = True
+
+    def __str__(self) -> str:
+        return "string"
 
 
 @dataclass
@@ -204,3 +229,7 @@ class TupleNode(ABITypeNode):
             self.is_dynamic = True
         else:
             self.width = sum((typ.width for typ in self.ctypes))
+
+    def __str__(self) -> str:
+        inner = ",".join(map(str, self.ctypes))
+        return f"({inner})"
