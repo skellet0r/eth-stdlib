@@ -20,71 +20,102 @@ from typing import Any
 
 from eth.codecs.abi import nodes
 from eth.codecs.abi.exceptions import EncodeError
-from eth.codecs.abi.formatter import Formatter
 
 
 class Encoder:
-    """Ethereum ABI Encoder."""
+    """Ethereum contract ABIv2 encoder."""
 
     @classmethod
-    def encode(cls, node: nodes.Node, value: Any) -> bytes:
+    def encode(cls, node: nodes.ABITypeNode, value: Any) -> bytes:
         """Encode a value according to an ABI type.
 
         Parameters:
-            node: The ABI type to encode the value as.
+            node: The ABI type node to encode the value as.
             value: The value to be encoded.
 
         Returns:
             The encoded value.
 
         Raises:
-            EncodeError: If value, or sub-sequence thereof, can't be encoded.
-            TypeError: If node argument is not an instance of `nodes.Node`.
+            EncodeError: If value can't be encoded.
+            TypeError: If the ``node`` argument is not an instance of `nodes.ABITypeNode`.
         """
-        if not isinstance(node, nodes.Node):
-            raise TypeError(f"Invalid argument type for node: {type(node).__qualname__!r}")
+        if not isinstance(node, nodes.ABITypeNode):
+            raise TypeError(f"Invalid argument type for `node`: {type(node).__qualname__!r}")
 
         return node.accept(cls, value)
 
-    @staticmethod
-    def visit_Address(node: nodes.Address, value: str) -> bytes:
+    @classmethod
+    def visit_Address(cls, node: nodes.AddressNode, value: str) -> bytes:
+        """Encode an address.
+
+        Note:
+            Address values are encoded the same as the uint160 ABI type. There is no
+            verification of whether the value is checksummed or not.
+
+        Parameters:
+            node: The address ABI node type.
+            value: The address value to encode.
+
+        Returns:
+            An ABIv2 encoded address.
+
+        Raises:
+            EncodeError: If the value can't be encoded.
+        """
         try:
-            bval = bytes.fromhex(value.removeprefix("0x"))
-            assert len(bval) == 20
-            return bval.rjust(32, b"\x00")
-        except (AttributeError, TypeError) as e:
-            # AttributeError - if `value` does not have `removeprefix` method (only bytes | str)
+            return cls.encode(nodes.IntegerNode(160), int(value, 16))
+        except (AttributeError, TypeError):
             # TypeError - if `value` is not a `str` instance (if value == bytes)
-            raise EncodeError("address", value, "Value is not an instance of type 'str'") from e
-        except ValueError as e:
+            raise EncodeError("address", value, "Value is not an instance of type 'str'")
+        except ValueError:
             # ValueError - if value contains non-hexadecimal characters (e.g "-0x...", "0xSJ32...")
-            raise EncodeError("address", value, "Value contains non-hexadecimal number(s)") from e
-        except AssertionError as e:
-            # AssertionError - if length of the bytes value is not 20
-            raise EncodeError("address", value, "Value is not 20 bytes") from e
+            raise EncodeError("address", value, "Value contains non-hexadecimal number(s)")
+        except EncodeError:
+            # EncodeError - does not fit in the type bounds (not 20 bytes)
+            raise EncodeError("address", value, "Value is outside of type bounds")
 
     @classmethod
-    def visit_Array(cls, node: nodes.Array, value: list | tuple) -> bytes:
-        try:
-            # validate value is a list or tuple of appropriate size
-            assert isinstance(value, (list, tuple)), "Value is not a list | tuple type"
-            if node.size != -1:
-                assert len(value) == node.size, f"Expected value of size {node.size}"
-        except AssertionError as e:
-            raise EncodeError(Formatter.format(node), value, e.args[0]) from e
+    def visit_Array(cls, node: nodes.ArrayNode, value: list | tuple) -> bytes:
+        """Encode an array.
 
-        # there are 4 possible cases when encoding an array
-        # 1) static array, w/ static elements
-        # 2) dynamic array, w/ static elements - ptr
-        # 3) static array, w/ dynamic elements - ptr
-        # 4) dynamic array, w/ dynamic elements - ptr
+        Note:
+            There are 4 possible cases when encoding an array:
+
+                #. static array with static elements
+                #. dynamic array with static elements
+                #. static array with dynamic elements
+                #. dynamic array with dynamic elements
+
+            Arrays with dynamic length are encoded with the number of elements prepended to the
+            static data section. Arrays with dynamic elements have pointers in the static data
+            section, pointing to the start of the encoded element in the dynamic data section.
+
+            See `ABIv2 Spec <https://docs.soliditylang.org/en/develop/abi-spec.html>`_.
+
+        Parameters:
+            node: The array ABI node type.
+            value: The array value to encode.
+
+        Returns:
+            An ABIv2 encoded array.
+
+        Raises:
+            EncodeError: If the value can't be encoded.
+        """
+        try:
+            assert isinstance(value, (list, tuple)), "Value is not a list or tuple type"
+            if node.length is not None:
+                assert len(value) == node.length, f"Expected value of size {node.length}"
+        except AssertionError as e:
+            raise EncodeError(str(node), value, e.args[0])
 
         tail = [cls.encode(node.subtype, val) for val in value]
         if not node.is_dynamic:
             # case 1: return the concatenation of the encoded elements
             return b"".join(tail)
         elif node.size == -1 and not node.subtype.is_dynamic:
-            # case 2: return the encoded size of the array concatenated with the encoded elemnts
+            # case 2: return the encoded size of the array concatenated with the encoded elements
             # of the array concatenated
             return len(value).to_bytes(32, "big") + b"".join(tail)
 
@@ -107,107 +138,173 @@ class Encoder:
         # it's element in the tail
         return len(value).to_bytes(32, "big") + b"".join(head + tail)
 
-    @staticmethod
-    def visit_Bool(node: nodes.Bool, value: bool) -> bytes:
-        try:
-            assert isinstance(value, bool), "Value is not an instance of type 'bool'"
-            return value.to_bytes(32, "big")
-        except AssertionError as e:
-            raise EncodeError("bool", value, e.args[0]) from e
+    @classmethod
+    def visit_Bool(cls, node: nodes.BooleanNode, value: bool) -> bytes:
+        """Encode a boolean.
+
+        Note:
+            Booleans are encoded the same as a uint256, but with the type bounds being [0, 1].
+
+        Parameters:
+            node: The boolean ABI node type.
+            value: The boolean value to encode.
+
+        Returns:
+            An ABIv2 encoded boolean.
+
+        Raises:
+            EncodeError: If the value can't be encoded.
+        """
+        if not isinstance(value, bool):
+            raise EncodeError("bool", value, "Value is not an instance of type 'bool'")
+        return cls.encode(nodes.IntegerNode(1), value)
 
     @staticmethod
     def visit_Bytes(node: nodes.Bytes, value: bytes) -> bytes:
+        """Encode a byte array.
+
+        Note:
+            Fixed width byte arrays are encoded by padding the left, up to the width, with null
+            bytes. Whereas a dynamic byte array is encoded by prepending the value with the encoded
+            length of the value.
+
+        Parameters:
+            node: The bytes ABI node type.
+            value: The bytes value to encode.
+
+        Returns:
+            An ABIv2 encoded byte array.
+
+        Raises:
+            EncodeError: If the value can't be encoded.
+        """
         try:
-            assert isinstance(value, (bytes, bytearray)), "Value is not an instance of type 'bytes'"
+            assert isinstance(value, bytes), "Value is not an instance of type 'bytes'"
             length = len(value)
             if not node.is_dynamic:
-                assert length <= node.size, f"Value is not {node.size} bytes"
+                assert length <= node.size, f"Value is not {node.size} bytes in length"
         except AssertionError as e:
-            raise EncodeError(Formatter.format(node), value, e.args[0]) from e
+            raise EncodeError(str(node), value, e.args[0])
 
         # dyanmic
         if node.is_dynamic:
-            if length % 32 != 0:
-                # pad end with null bytes up to nearest word
-                width = length + 32 - (length % 32)
-                value = value.ljust(width, b"\x00")
+            # no padding, null bytes cost extra
             return length.to_bytes(32, "big") + value
 
-        # static
+        # static - requires padding to occupy a full word length
         return value.rjust(node.size, b"\x00").ljust(32, b"\x00")
 
     @staticmethod
-    def visit_Fixed(node: nodes.Fixed, value: decimal.Decimal) -> bytes:
-        typestr = Formatter.format(node)
-        if not isinstance(value, decimal.Decimal):
-            raise EncodeError(typestr, value, "Value is not an instance of type 'decimal.Decimal'")
+    def visit_Fixed(node: nodes.FixedNode, value: decimal.Decimal) -> bytes:
+        """Encode a fixed point decimal.
 
-        # calculate the integer type bounds
-        ilo, ihi = 0, 2**node.size - 1
-        if node.is_signed:
-            subtrahend = 2 ** (node.size - 1)
-            ilo, ihi = ilo - subtrahend, ihi - subtrahend
+        Parameters:
+            node: The fixed point decimal ABI node type.
+            value: The fixed point decimal value to encode.
 
-        with decimal.localcontext(decimal.Context(prec=128)) as ctx:
-            # finalize type bound calculation by dividing by scalar 10**-precision
-            lo, hi = [decimal.Decimal(v).scaleb(-node.precision) for v in [ilo, ihi]]
+        Returns:
+            An ABIv2 encoded fixed point decimal.
 
-            try:
-                assert lo <= value <= hi, "Value outside type bounds"
-                scaled_value = int(value.scaleb(node.precision).to_integral_exact())
+        Raises:
+            EncodeError: If the value can't be encoded.
+        """
+        try:
+            assert isinstance(
+                value, decimal.Decimal
+            ), "Value is not an instance of type 'decimal.Decimal'"
+            lo, hi = node.bounds
+            assert lo <= value <= hi, "Value outside type bounds"
+
+            with decimal.localcontext(decimal.Context(prec=128)) as ctx:
                 # using to_integral_exact will signal Inexact if non-zero digits were rounded off
                 # https://docs.python.org/3/library/decimal.html#decimal.Decimal.to_integral_exact
+                scaled_value = int(value.scaleb(node.precision).to_integral_exact())
                 assert not ctx.flags[decimal.Inexact], "Precision of value is greater than allowed"
-            except AssertionError as e:
-                raise EncodeError(typestr, value, e.args[0]) from e
+        except AssertionError as e:
+            raise EncodeError(str(node), value, e.args[0])
 
         return scaled_value.to_bytes(32, "big", signed=node.is_signed)
 
     @staticmethod
-    def visit_Integer(node: nodes.Integer, value: int) -> bytes:
-        # calculate type bounds
-        lo, hi = 0, 2**node.size - 1
-        if node.is_signed:
-            subtrahend = 2 ** (node.size - 1)
-            lo, hi = lo - subtrahend, hi - subtrahend
+    def visit_Integer(node: nodes.IntegerNode, value: int) -> bytes:
+        """Encode an integer.
 
+        Parameters:
+            node: The integer ABI node type.
+            value: The integer value to encode.
+
+        Returns:
+            An ABIv2 encoded integer.
+
+        Raises:
+            EncodeError: If the value can't be encoded.
+        """
         try:
             assert isinstance(value, int), "Value not an instance of type 'int'"
-            # validate value fits in type and is of type int
+            lo, hi = node.bounds
             assert lo <= value <= hi, "Value outside type bounds"
         except AssertionError as e:
-            # value can be a float, in which case it's not valid
-            raise EncodeError(Formatter.format(node), value, e.args[0]) from e
+            raise EncodeError(str(node), value, e.args[0])
 
         return value.to_bytes(32, "big", signed=node.is_signed)
 
     @classmethod
     def visit_String(cls, node: nodes.String, value: str) -> bytes:
+        """Encode a string.
+
+        Note:
+            Strings are encoded exactly the same as dynamic byte arrays.
+
+        Parameters:
+            node: The string ABI node type.
+            value: The string value to encode.
+
+        Returns:
+            An ABIv2 encoded string.
+
+        Raises:
+            EncodeError: If the value can't be encoded.
+        """
         try:
-            return cls.encode(nodes.Bytes(-1), value.encode())
-        except (AttributeError, EncodeError) as e:
+            return cls.encode(nodes.Bytes(), value.encode())
+        except (AttributeError, EncodeError):
             # AttributeError - if value does not have encode method
-            # EncodeError - if value.encode() does not return a bytes | bytearray instance
-            raise EncodeError("string", value, "Value is not an instance of type 'str'") from e
+            # EncodeError - if value.encode() does not return a bytes instance
+            raise EncodeError("string", value, "Value is not an instance of type 'str'")
 
     @classmethod
-    def visit_Tuple(cls, node: nodes.Tuple, value: list | tuple) -> bytes:
+    def visit_Tuple(cls, node: nodes.TupleNode, value: list | tuple) -> bytes:
+        """Encode a tuple.
+
+        Note:
+            There are 2 possible cases when encoding a tuple:
+
+                #. All components are static
+                #. One or more components are dynamic
+
+            Similar to arrays, dynamic data is encoded and placed in the dynamic data section,
+            and a pointer is placed in the static data section.
+
+        Parameters:
+            node: The tuple ABI node type.
+            value: The tuple value to encode.
+
+        Returns:
+            An ABIv2 encoded tuple.
+
+        Raises:
+            EncodeError: If the value can't be encoded.
+        """
         try:
             # validate value is a list or tuple of appropriate size
-            assert isinstance(value, (list, tuple)), "Value is not a list | tuple type"
-            assert len(node.components) == len(
-                value
-            ), f"Expected value of size {len(node.components)}"
+            assert isinstance(value, (list, tuple)), "Value is not a list or tuple type"
+            assert len(node.ctypes) == len(value), f"Expected value of size {len(node.ctypes)}"
         except AssertionError as e:
-            raise EncodeError(Formatter.format(node), value, e.args[0]) from e
-
-        # there are 2 possible cases when encoding a tuple
-        # 1) all components are static
-        # 2) at least 1 component is dynamic
+            raise EncodeError(str(node), value, e.args[0])
 
         if not node.is_dynamic:
             # case 1: return the concatentation of each encoded element
-            return b"".join([cls.encode(typ, val) for typ, val, in zip(node.components, value)])
+            return b"".join((cls.encode(typ, val) for typ, val, in zip(node.components, value)))
 
         # case 2: similar to a dynamic array, there is a static-head w/ pointers to the
         # dynamic-tail section for dynamic elements
@@ -226,7 +323,7 @@ class Encoder:
         # can potentially occupy more than 32 bytes (such as arrays, or tuples)
         # so we take the sum of the length of each element (replacing None values
         # with 32, the size of a pointer)
-        width = sum([32 if val is None else len(val) for val in raw_head])
+        width = sum((32 if val is None else len(val) for val in raw_head))
         # calculate each dynamic element's offset from the start of the dynamic-tail
         # used for calculating pointers (similar to array encoding)
         offsets = [0, *accumulate(map(len, tail))][:-1]
