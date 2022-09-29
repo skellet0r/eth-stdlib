@@ -85,11 +85,11 @@ class Parser:
 
         # array
         elif (mo := cls.ARRAY_PATTERN.fullmatch(schema)) is not None:
-            etype, size = mo[1], int(mo[2]) if mo[2] is not None else None
-            if size == 0:
+            etype, asize = mo[1], int(mo[2]) if mo[2] is not None else None
+            if asize == 0:
                 raise ParseError(schema, "'0' is not a valid array size")
             # recurse and parse the element type of the array
-            return nodes.Array(cls.parse(etype), size)
+            return nodes.Array(cls.parse(etype), asize)
 
         # tuple
         elif cls.TUPLE_PATTERN.fullmatch(schema) is not None:
