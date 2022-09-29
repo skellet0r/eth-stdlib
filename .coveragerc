@@ -1,4 +1,4 @@
-# .coveragerc to control coverage.py
+# coverage.py configuration
 # https://coverage.readthedocs.io/en/latest/config.html
 [run]
 branch = True
