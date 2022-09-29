@@ -25,12 +25,6 @@ repos:
     rev: v0.971
     hooks:
       - id: mypy
-  - repo: https://github.com/Lucas-C/pre-commit-hooks
-    rev: v1.3.1
-    hooks:
-      - id: insert-license
-        files: '^src/'
-        args: ['--license-filepath', 'BOILERPLATE']
   - repo: https://github.com/python-poetry/poetry
     rev: 1.2.0
     hooks:
