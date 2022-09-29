@@ -48,21 +48,21 @@ class CodecError(ABIError):
     """Base class for codec errors.
 
     Parameters:
-        typestr: The type string of the type coding was attempted for.
+        schema: The type string of the type coding was attempted for.
         value: The value that coding was attempted for.
         msg: Explanation of why the value is invalid.
         *args: Additional arguments passed to the parent class init method.
         **kwargs: Additional keyword arguments passed to the parent class init method.
 
     Attributes:
-        typestr: The type string of the type coding was attempted for.
+        schema: The type string of the type coding was attempted for.
         value: The value that coding was attempted for.
         msg: Explanation of why the value is invalid.
     """
 
-    def __init__(self, typestr: str, value: Any, msg: str, *args, **kwargs):
+    def __init__(self, schema: str, value: Any, msg: str, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.typestr = typestr
+        self.schema = schema
         self.value = value
         self.msg = msg
 
@@ -71,11 +71,11 @@ class EncodeError(CodecError):
     """Raised when attempting to encode an invalid value for a type."""
 
     def __str__(self) -> str:
-        return f"Error encoding {self.value!r} as {self.typestr!r} - {self.msg}"
+        return f"Error encoding {self.value!r} as {self.schema!r} - {self.msg}"
 
 
 class DecodeError(CodecError):
     """Raised when attempting to decode an invalid value for a type."""
 
     def __str__(self) -> str:
-        return f"Error decoding {'0x' + self.value.hex()!r} as {self.typestr!r} - {self.msg}"
+        return f"Error decoding {'0x' + self.value.hex()!r} as {self.schema!r} - {self.msg}"
