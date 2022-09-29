@@ -16,4 +16,5 @@ jobs:
           python-version: '3.10'
           cache: 'poetry'
       - run: poetry install --sync
-      - run: poetry run pytest
+      - run: poetry run pytest --cov-report xml
+      - uses: codecov/codecov-action@v3
