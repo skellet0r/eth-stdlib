@@ -31,3 +31,8 @@ repos:
       - id: poetry-check
       - id: poetry-lock
         args: ['--no-update', '--check']
+
+ci:
+  autofix_commit_msg: 'chore: automatic fixes from pre-commit'
+  autoupdate_commit_msg: 'chore: update pre-commit hooks'
+  autoupdate_schedule: quarterly
