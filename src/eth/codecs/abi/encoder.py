@@ -160,7 +160,7 @@ class Encoder:
         return cls.encode(nodes.IntegerNode(1), value)
 
     @staticmethod
-    def visit_Bytes(node: nodes.Bytes, value: bytes) -> bytes:
+    def visit_Bytes(node: nodes.BytesNode, value: bytes) -> bytes:
         """Encode a byte array.
 
         Note:
@@ -249,7 +249,7 @@ class Encoder:
         return value.to_bytes(32, "big", signed=node.is_signed)
 
     @classmethod
-    def visit_String(cls, node: nodes.String, value: str) -> bytes:
+    def visit_String(cls, node: nodes.StringNode, value: str) -> bytes:
         """Encode a string.
 
         Note:
@@ -304,19 +304,19 @@ class Encoder:
 
         if not node.is_dynamic:
             # case 1: return the concatentation of each encoded element
-            return b"".join((cls.encode(typ, val) for typ, val, in zip(node.components, value)))
+            return b"".join((cls.encode(ctyp, val) for ctyp, val, in zip(node.ctypes, value)))
 
         # case 2: similar to a dynamic array, there is a static-head w/ pointers to the
         # dynamic-tail section for dynamic elements
         raw_head, tail = [], []
-        for typ, val in zip(node.components, value):
-            output = cls.encode(typ, val)
+        for ctyp, val in zip(node.ctypes, value):
+            output = cls.encode(ctyp, val)
             # if the element is dynamic append None to the head section (to be later replaced
             # with a pointer), and the encoded element in the tail section
             # if the element is static, append the encoded element in the head section,
             # and an empty (0-width) bytes value to the tail
-            raw_head.append(None if typ.is_dynamic else output)
-            tail.append(output if typ.is_dynamic else b"")
+            raw_head.append(None if ctyp.is_dynamic else output)
+            tail.append(output if ctyp.is_dynamic else b"")
 
         # calculate the width of the static-head section
         # since elements in the head section can be different types, they
