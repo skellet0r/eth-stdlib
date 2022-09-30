@@ -6,11 +6,39 @@
 Welcome to eth-stdlib's documentation!
 ======================================
 
-Library of pure python code for Ethereum development.
+The Ethereum Standard Library is a collection of pure python libraries for developers building on the EVM.
+The intention is to have a single repository of data structures and utilities which is easy to grok and just as
+easy to install as a dependency.
+
+Installation
+------------
+
+``eth-stdlib`` is available on `PyPi <https://pypi.org/project/eth-stdlib/>`_ for download, and on `github <https://github.com/skellet0r/eth-stdlib>`_ for source installs.
+
+.. code-block:: bash
+
+   $ pip install eth-stdlib
+
+.. code-block:: bash
+
+   $ poetry add eth-stdlib
+
+Usage
+-----
+
+After installing locally, the ``eth`` namespace will be available to import in Python applications and scripts.
+
+.. code-block:: python
+
+   >>> from eth.codecs import abi
+   >>> abi.encode("uint256", 42)
+   b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00*'
+   >>> abi.decode("uint8", b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x10')
+   16
 
 .. toctree::
    :maxdepth: 2
-   :caption: Contents:
+   :caption: Table of Contents:
 
    codecs/index
 
