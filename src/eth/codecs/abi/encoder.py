@@ -46,7 +46,7 @@ class Encoder:
         return node.accept(cls, value)
 
     @classmethod
-    def visit_Address(cls, node: nodes.AddressNode, value: str) -> bytes:
+    def visit_AddressNode(cls, node: nodes.AddressNode, value: str) -> bytes:
         """Encode an address.
 
         Note:
@@ -76,7 +76,7 @@ class Encoder:
             raise EncodeError("address", value, "Value is outside of type bounds")
 
     @classmethod
-    def visit_Array(cls, node: nodes.ArrayNode, value: list | tuple) -> bytes:
+    def visit_ArrayNode(cls, node: nodes.ArrayNode, value: list | tuple) -> bytes:
         """Encode an array.
 
         Note:
@@ -139,7 +139,7 @@ class Encoder:
         return len(value).to_bytes(32, "big") + b"".join(head + tail)
 
     @classmethod
-    def visit_Bool(cls, node: nodes.BooleanNode, value: bool) -> bytes:
+    def visit_BoolNode(cls, node: nodes.BooleanNode, value: bool) -> bytes:
         """Encode a boolean.
 
         Note:
@@ -160,7 +160,7 @@ class Encoder:
         return cls.encode(nodes.IntegerNode(1), value)
 
     @staticmethod
-    def visit_Bytes(node: nodes.BytesNode, value: bytes) -> bytes:
+    def visit_BytesNode(node: nodes.BytesNode, value: bytes) -> bytes:
         """Encode a byte array.
 
         Note:
@@ -195,7 +195,7 @@ class Encoder:
         return value.rjust(node.size, b"\x00").ljust(32, b"\x00")
 
     @staticmethod
-    def visit_Fixed(node: nodes.FixedNode, value: decimal.Decimal) -> bytes:
+    def visit_FixedNode(node: nodes.FixedNode, value: decimal.Decimal) -> bytes:
         """Encode a fixed point decimal.
 
         Parameters:
@@ -226,7 +226,7 @@ class Encoder:
         return scaled_value.to_bytes(32, "big", signed=node.is_signed)
 
     @staticmethod
-    def visit_Integer(node: nodes.IntegerNode, value: int) -> bytes:
+    def visit_IntegerNode(node: nodes.IntegerNode, value: int) -> bytes:
         """Encode an integer.
 
         Parameters:
@@ -249,7 +249,7 @@ class Encoder:
         return value.to_bytes(32, "big", signed=node.is_signed)
 
     @classmethod
-    def visit_String(cls, node: nodes.StringNode, value: str) -> bytes:
+    def visit_StringNode(cls, node: nodes.StringNode, value: str) -> bytes:
         """Encode a string.
 
         Note:
@@ -273,7 +273,7 @@ class Encoder:
             raise EncodeError("string", value, "Value is not an instance of type 'str'")
 
     @classmethod
-    def visit_Tuple(cls, node: nodes.TupleNode, value: list | tuple) -> bytes:
+    def visit_TupleNode(cls, node: nodes.TupleNode, value: list | tuple) -> bytes:
         """Encode a tuple.
 
         Note:

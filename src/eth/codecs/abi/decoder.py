@@ -80,7 +80,7 @@ class Decoder:
             raise DecodeError(str(node), value, e.args[0])
 
     @classmethod
-    def visit_Address(cls, node: nodes.AddressNode, value: bytes) -> str:
+    def visit_AddressNode(cls, node: nodes.AddressNode, value: bytes) -> str:
         """Decode an address.
 
         Note:
@@ -101,7 +101,7 @@ class Decoder:
         return f"0x{value[-20:].hex()}"
 
     @classmethod
-    def visit_Array(cls, node: nodes.ArrayNode, value: bytes) -> list[Any]:
+    def visit_ArrayNode(cls, node: nodes.ArrayNode, value: bytes) -> list[Any]:
         """Decode an array.
 
         Parameters:
@@ -148,7 +148,7 @@ class Decoder:
         return [cls.decode(node.etype, v) for v in data]
 
     @classmethod
-    def visit_Bool(cls, node: nodes.BooleanNode, value: bytes) -> bool:
+    def visit_BoolNode(cls, node: nodes.BooleanNode, value: bytes) -> bool:
         """Decode a boolean.
 
         Parameters:
@@ -166,7 +166,7 @@ class Decoder:
         return bool.from_bytes(value, "big")
 
     @classmethod
-    def visit_Bytes(cls, node: nodes.BytesNode, value: bytes) -> bytes:
+    def visit_BytesNode(cls, node: nodes.BytesNode, value: bytes) -> bytes:
         """Decode a byte array.
 
         Parameters:
@@ -196,7 +196,7 @@ class Decoder:
         return value[32 : 32 + size]
 
     @classmethod
-    def visit_Fixed(cls, node: nodes.FixedNode, value: bytes) -> decimal.Decimal:
+    def visit_FixedNode(cls, node: nodes.FixedNode, value: bytes) -> decimal.Decimal:
         """Decode a fixed point decimal.
 
         Parameters:
@@ -220,7 +220,7 @@ class Decoder:
             return decimal.Decimal(ival).scaleb(-node.precision)
 
     @staticmethod
-    def visit_Integer(node: nodes.IntegerNode, value: bytes) -> int:
+    def visit_IntegerNode(node: nodes.IntegerNode, value: bytes) -> int:
         """Decode an integer.
 
         Parameters:
@@ -246,7 +246,7 @@ class Decoder:
             raise DecodeError(str(node), value, e.args[0])
 
     @classmethod
-    def visit_String(cls, node: nodes.StringNode, value: bytes) -> str:
+    def visit_StringNode(cls, node: nodes.StringNode, value: bytes) -> str:
         """Decode a string.
 
         Note:
@@ -269,7 +269,7 @@ class Decoder:
             raise DecodeError("string", value, e.msg) from e
 
     @classmethod
-    def visit_Tuple(cls, node: nodes.TupleNode, value: bytes) -> tuple:
+    def visit_TupleNode(cls, node: nodes.TupleNode, value: bytes) -> tuple:
         """Decode a tuple.
 
         Parameters:
