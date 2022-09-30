@@ -110,11 +110,11 @@ class Encoder:
         except AssertionError as e:
             raise EncodeError(str(node), value, e.args[0])
 
-        tail = [cls.encode(node.subtype, val) for val in value]
+        tail = [cls.encode(node.etype, val) for val in value]
         if not node.is_dynamic:
             # case 1: return the concatenation of the encoded elements
             return b"".join(tail)
-        elif node.size == -1 and not node.subtype.is_dynamic:
+        elif node.length is not None and not node.etype.is_dynamic:
             # case 2: return the encoded size of the array concatenated with the encoded elements
             # of the array concatenated
             return len(value).to_bytes(32, "big") + b"".join(tail)
@@ -128,7 +128,7 @@ class Encoder:
         # calculate the pointers, which are just the width + offset
         head = [(width + offset).to_bytes(32, "big") for offset in offsets]
 
-        if node.size != -1:
+        if node.length != -1:
             # case 3: return the concatenation of the static-head and dynamic-tail, each element in
             # the head is a pointer to it's element in the tail
             return b"".join(head + tail)
