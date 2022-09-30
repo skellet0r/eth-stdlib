@@ -64,16 +64,18 @@ class Encoder:
             EncodeError: If the value can't be encoded.
         """
         try:
-            return cls.encode(nodes.IntegerNode(160), int(value, 16))
+            bval = bytes.fromhex(value.removeprefix("0x"))
+            assert len(bval) == 20
+            return bval.rjust(32, b"\x00")
         except (AttributeError, TypeError):
             # TypeError - if `value` is not a `str` instance (if value == bytes)
             raise EncodeError("address", value, "Value is not an instance of type 'str'")
         except ValueError:
             # ValueError - if value contains non-hexadecimal characters (e.g "-0x...", "0xSJ32...")
             raise EncodeError("address", value, "Value contains non-hexadecimal number(s)")
-        except EncodeError:
-            # EncodeError - does not fit in the type bounds (not 20 bytes)
-            raise EncodeError("address", value, "Value is outside of type bounds")
+        except AssertionError:
+            # AssertionError - does not fit in the type bounds (not 20 bytes)
+            raise EncodeError("address", value, "Value is not 20 bytes")
 
     @classmethod
     def visit_ArrayNode(cls, node: nodes.ArrayNode, value: list | tuple) -> bytes:
@@ -114,7 +116,7 @@ class Encoder:
         if not node.is_dynamic:
             # case 1: return the concatenation of the encoded elements
             return b"".join(tail)
-        elif node.length is not None and not node.etype.is_dynamic:
+        elif node.length is None and not node.etype.is_dynamic:
             # case 2: return the encoded size of the array concatenated with the encoded elements
             # of the array concatenated
             return len(value).to_bytes(32, "big") + b"".join(tail)
@@ -128,7 +130,7 @@ class Encoder:
         # calculate the pointers, which are just the width + offset
         head = [(width + offset).to_bytes(32, "big") for offset in offsets]
 
-        if node.length != -1:
+        if node.length is not None:
             # case 3: return the concatenation of the static-head and dynamic-tail, each element in
             # the head is a pointer to it's element in the tail
             return b"".join(head + tail)
@@ -139,7 +141,7 @@ class Encoder:
         return len(value).to_bytes(32, "big") + b"".join(head + tail)
 
     @classmethod
-    def visit_BoolNode(cls, node: nodes.BooleanNode, value: bool) -> bytes:
+    def visit_BooleanNode(cls, node: nodes.BooleanNode, value: bool) -> bytes:
         """Encode a boolean.
 
         Note:
@@ -266,7 +268,7 @@ class Encoder:
             EncodeError: If the value can't be encoded.
         """
         try:
-            return cls.encode(nodes.Bytes(), value.encode())
+            return cls.encode(nodes.BytesNode(), value.encode())
         except (AttributeError, EncodeError):
             # AttributeError - if value does not have encode method
             # EncodeError - if value.encode() does not return a bytes instance

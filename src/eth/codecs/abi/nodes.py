@@ -20,7 +20,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 
-@dataclass(init=False)
+@dataclass(init=False, frozen=True)
 class ABITypeNode:
     """Base class for ABI type nodes.
 
@@ -44,7 +44,7 @@ class ABITypeNode:
         return fn(self, *args, **kwargs)
 
 
-@dataclass(init=False)
+@dataclass(init=False, frozen=True)
 class AddressNode(ABITypeNode):
     """Address ABI type node."""
 
@@ -52,7 +52,7 @@ class AddressNode(ABITypeNode):
         return "address"
 
 
-@dataclass
+@dataclass(frozen=True)
 class ArrayNode(ABITypeNode):
     """Array ABI type node.
 
@@ -70,16 +70,16 @@ class ArrayNode(ABITypeNode):
 
     def __post_init__(self):
         if self.etype.is_dynamic or self.length is None:
-            self.is_dynamic = True
+            object.__setattr__(self, "is_dynamic", True)
         else:
-            self.width = self.etype.width * self.length
+            object.__setattr__(self, "width", self.etype.width * self.length)
 
     def __str__(self) -> str:
         suffix = "[]" if self.length is None else f"[{self.length}]"
         return str(self.etype) + suffix
 
 
-@dataclass(init=False)
+@dataclass(init=False, frozen=True)
 class BooleanNode(ABITypeNode):
     """Boolean ABI type node."""
 
@@ -87,7 +87,7 @@ class BooleanNode(ABITypeNode):
         return "bool"
 
 
-@dataclass
+@dataclass(frozen=True)
 class BytesNode(ABITypeNode):
     """Bytes ABI type node.
 
@@ -103,14 +103,14 @@ class BytesNode(ABITypeNode):
     size: int | None = None
 
     def __post_init__(self):
-        self.is_dynamic = self.size is None
+        object.__setattr__(self, "is_dynamic", self.size is None)
 
     def __str__(self) -> str:
         suffix = "" if self.size is None else f"{self.size}"
         return "bytes" + suffix
 
 
-@dataclass
+@dataclass(frozen=True)
 class IntegerNode(ABITypeNode):
     """Integer ABI type node.
 
@@ -158,7 +158,7 @@ class IntegerNode(ABITypeNode):
         return prefix + f"int{self.bits}"
 
 
-@dataclass
+@dataclass(frozen=True)
 class FixedNode(ABITypeNode):
     """Fixed point decimal ABI type node.
 
@@ -210,7 +210,7 @@ class FixedNode(ABITypeNode):
         return prefix + f"fixed{self.bits}x{self.precision}"
 
 
-@dataclass(init=False)
+@dataclass(init=False, frozen=True)
 class StringNode(ABITypeNode):
     """String ABI type node."""
 
@@ -220,7 +220,7 @@ class StringNode(ABITypeNode):
         return "string"
 
 
-@dataclass
+@dataclass(frozen=True)
 class TupleNode(ABITypeNode):
     """Tuple ABI type node.
 
@@ -235,9 +235,9 @@ class TupleNode(ABITypeNode):
 
     def __post_init__(self):
         if any((typ.is_dynamic for typ in self.ctypes)):
-            self.is_dynamic = True
+            object.__setattr__(self, "is_dynamic", True)
         else:
-            self.width = sum((typ.width for typ in self.ctypes))
+            object.__setattr__(self, "width", sum((typ.width for typ in self.ctypes)))
 
     def __str__(self) -> str:
         inner = ",".join(map(str, self.ctypes))

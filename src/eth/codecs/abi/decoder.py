@@ -134,7 +134,7 @@ class Decoder:
             q, r = divmod(len(val), length)
             if r != 0:
                 raise DecodeError(str(node), value, "Invalid array size")
-            return [cls.decode(node.subtype, val[i : i + q]) for i in range(0, len(val), q)]
+            return [cls.decode(node.etype, val[i : i + q]) for i in range(0, len(val), q)]
 
         # 3) static array, w/ dynamic elements
         # 4) dynamic array, w/ dynamic elements
@@ -148,7 +148,7 @@ class Decoder:
         return [cls.decode(node.etype, v) for v in data]
 
     @classmethod
-    def visit_BoolNode(cls, node: nodes.BooleanNode, value: bytes) -> bool:
+    def visit_BooleanNode(cls, node: nodes.BooleanNode, value: bytes) -> bool:
         """Decode a boolean.
 
         Parameters:
@@ -211,7 +211,7 @@ class Decoder:
         """
         try:
             # decode as an integer
-            ival = cls.decode(nodes.Integer(node.bits, node.is_signed), value)
+            ival = cls.decode(nodes.IntegerNode(node.bits, node.is_signed), value)
         except DecodeError as e:
             raise DecodeError(str(node), value, e.msg)
 
@@ -264,7 +264,7 @@ class Decoder:
             DecodeError: If the value can't be decoded.
         """
         try:
-            return cls.decode(nodes.Bytes(), value).decode(errors="surrogateescape")
+            return cls.decode(nodes.BytesNode(), value).decode(errors="surrogateescape")
         except DecodeError as e:
             raise DecodeError("string", value, e.msg) from e
 
