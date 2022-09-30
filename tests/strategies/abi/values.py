@@ -32,11 +32,11 @@ class StrategyMaker:
     @classmethod
     def visit_ArrayNode(cls, node: nodes.ArrayNode) -> st.SearchStrategy:
         st_subtype = cls.make_strategy(node.etype)
-        min_size, max_size = (0, None) if node.length == -1 else (node.length, node.length)
+        min_size, max_size = (0, None) if node.length is None else (node.length, node.length)
         return st.lists(st_subtype, min_size=min_size, max_size=max_size)
 
     @staticmethod
-    def visit_BoolNode(node: nodes.BooleanNode) -> st.SearchStrategy:
+    def visit_BooleanNode(node: nodes.BooleanNode) -> st.SearchStrategy:
         return st.booleans()
 
     @staticmethod
