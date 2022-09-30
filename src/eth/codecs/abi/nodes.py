@@ -225,10 +225,10 @@ class TupleNode(ABITypeNode):
     """Tuple ABI type node.
 
     Parameters:
-        ctypes: The components types of the type.
+        ctypes: The component types of the tuple.
 
     Attributes:
-        ctypes: The components types of the type.
+        ctypes: The component types of the tuple.
     """
 
     ctypes: tuple[ABITypeNode, ...]
