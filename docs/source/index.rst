@@ -15,9 +15,13 @@ Installation
 
 ``eth-stdlib`` is available on `PyPi <https://pypi.org/project/eth-stdlib/>`_ for download, and on `github <https://github.com/skellet0r/eth-stdlib>`_ for source installs.
 
+Installing via pip:
+
 .. code-block:: bash
 
    $ pip install eth-stdlib
+
+Installing via poetry:
 
 .. code-block:: bash
 
@@ -40,7 +44,7 @@ After installing locally, the ``eth`` namespace will be available to import in P
    :maxdepth: 2
    :caption: Table of Contents:
 
-   codecs/index
+   codecs
 
 Indices and tables
 ==================
