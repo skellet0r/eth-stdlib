@@ -7,7 +7,7 @@ import tests.strategies.abi.nodes as st_nodes
 from eth.codecs.abi import decode, encode
 from eth.codecs.abi.decoder import Decoder
 from eth.codecs.abi.exceptions import DecodeError
-from eth.codecs.abi.nodes import Integer
+from eth.codecs.abi.nodes import IntegerNode
 from tests.strategies.abi.values import typestr_and_value
 
 
@@ -26,24 +26,24 @@ def test_decoding(value):
 
 
 def test_decode_raises_for_invalid_arguments():
-    for args in [({}, b""), (Integer(256, False), {})]:
+    for args in [({}, b""), (IntegerNode(256, False), {})]:
         with pytest.raises(TypeError, match=r"Received invalid type '\w+' for parameter '\w+'"):
             Decoder.decode(*args)
 
 
 def test_validate_atom_raises_for_invalid_values():
     with pytest.raises(DecodeError, match="Value is not 32 bytes"):
-        Decoder.validate_atom(Integer(256, False), b"", 256)
+        Decoder.validate_atom(IntegerNode(256, False), b"", 256)
 
     with pytest.raises(DecodeError, match="Value outside type bounds"):
-        Decoder.validate_atom(Integer(128, False), (2**128).to_bytes(32, "big"), 8)
+        Decoder.validate_atom(IntegerNode(128, False), (2**128).to_bytes(32, "big"), 8)
 
 
 def test_decode_array_raises_for_invalid_value():
-    with pytest.raises(DecodeError, match="Dynamic array value invalid size"):
+    with pytest.raises(DecodeError, match="Dynamic array value has invalid length"):
         decode("uint256[]", b"")
 
-    with pytest.raises(DecodeError, match="Static array value invalid size"):
+    with pytest.raises(DecodeError, match="Static array value invalid length"):
         decode("uint256[1]", b"")
 
     with pytest.raises(DecodeError, match="Invalid array size"):

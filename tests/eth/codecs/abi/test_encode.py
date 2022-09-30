@@ -26,10 +26,7 @@ def test_encode_bool(value):
 def test_encode_bytes(value):
     output = encode("bytes", value)
 
-    if (length := len(value)) % 32 != 0:
-        width = length + 32 - (length % 32)
-        value = value.ljust(width, b"\x00")
-    assert output == length.to_bytes(32, "big") + value
+    assert output == len(value).to_bytes(32, "big") + value
 
 
 @given(strategy("string"))
@@ -38,13 +35,10 @@ def test_encode_string(value):
 
     # string encoding under the hood uses bytes encoding
     value = value.encode()
-    if (length := len(value)) % 32 != 0:
-        width = length + 32 - (length % 32)
-        value = value.ljust(width, b"\x00")
-    assert output == length.to_bytes(32, "big") + value
+    assert output == len(value).to_bytes(32, "big") + value
 
 
-@given(typestr_and_value(st.builds(nodes.Bytes, st.integers(1, 32))))
+@given(typestr_and_value(st.builds(nodes.BytesNode, st.integers(1, 32))))
 def test_encode_static_bytes(value):
     typestr, val = value
     assert encode(typestr, val) == val.ljust(32, b"\x00")
@@ -146,14 +140,13 @@ def test_encode_dynamic_with_dynamic_elements_array(value):
 
 
 def test_encoding_invalid_node_type_raises():
-    with pytest.raises(TypeError, match="Invalid argument type for node"):
+    with pytest.raises(TypeError, match="Invalid argument type for `node`"):
         Encoder.encode("foo", "foo")
 
 
 def test_encoding_invalid_address_value_raises():
-    for value in [b"", 123]:
-        with pytest.raises(EncodeError, match="Value is not an instance of type 'str'"):
-            encode("address", value)
+    with pytest.raises(EncodeError, match="Value is not an instance of type 'str'"):
+        encode("address", 123)
 
     with pytest.raises(EncodeError, match=r"Value contains non-hexadecimal number\(s\)"):
         encode("address", "0x1234567890abcdefghij1234567890abcdefghij")
@@ -163,7 +156,7 @@ def test_encoding_invalid_address_value_raises():
 
 
 def test_encoding_invalid_array_value_raises():
-    with pytest.raises(EncodeError, match=r"Value is not a list \| tuple type"):
+    with pytest.raises(EncodeError, match="Value is not a list or tuple type"):
         encode("uint256[]", {})
 
     with pytest.raises(EncodeError, match="Expected value of size 3"):
@@ -208,8 +201,8 @@ def test_encoding_invalid_string_value_raises():
 
 
 def test_encoding_invalid_tuple_value_raises():
-    with pytest.raises(EncodeError, match=r"Value is not a list \| tuple type"):
+    with pytest.raises(EncodeError, match="Value is not a list or tuple type"):
         encode("(string)", set(["", "Hello"]))
 
-    with pytest.raises(EncodeError, match=r"Expected value of size 1"):
+    with pytest.raises(EncodeError, match="Expected value of size 1"):
         encode("(string)", ("", ""))
