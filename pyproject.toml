@@ -6,6 +6,7 @@ authors = ["Edward Amor <edward.amor3@gmail.com>"]
 license = "LGPL-3.0-only"
 readme = "README.md"
 repository = "https://github.com/skellet0r/eth-stdlib"
+documentation = "https://eth-stdlib.readthedocs.io/en/latest"
 keywords = ["ethereum"]
 classifiers = [
     "Intended Audience :: Developers",

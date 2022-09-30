@@ -1,3 +1,11 @@
+import os
+
+if os.environ.get("READTHEDOCS"):
+    import pathlib
+    import sys
+
+    sys.path.insert(0, str(pathlib.Path("../src/").resolve()))
+
 # Configuration file for the Sphinx documentation builder.
 #
 # For the full list of built-in configuration values, see the documentation:
@@ -25,3 +33,8 @@ exclude_patterns = []
 
 html_theme = "nature"
 html_static_path = ["_static"]
+
+# -- autodoc extension configuration ---------------------------------------------------
+# https://www.sphinx-doc.org/en/master/usage/extensions/autodoc.html#configuration
+
+autodoc_member_order = "bysource"
