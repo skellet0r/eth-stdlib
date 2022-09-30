@@ -1,0 +1,10 @@
+# coverage.py configuration
+# https://coverage.readthedocs.io/en/latest/config.html
+[run]
+branch = True
+
+[report]
+ignore_errors = True
+show_missing = True
+skip_empty = True
+sort = cover

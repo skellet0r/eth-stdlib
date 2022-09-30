@@ -25,9 +25,15 @@ repos:
     rev: v0.971
     hooks:
       - id: mypy
+        files: 'src/'
   - repo: https://github.com/python-poetry/poetry
-    rev: 1.2.0
+    rev: 1.2.1
     hooks:
       - id: poetry-check
       - id: poetry-lock
-        args: ["--no-update", "--check"]
+        args: ['--no-update', '--check']
+
+ci:
+  autofix_commit_msg: 'chore: automatic fixes from pre-commit'
+  autoupdate_commit_msg: 'chore: update pre-commit hooks'
+  autoupdate_schedule: quarterly
