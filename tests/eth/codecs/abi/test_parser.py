@@ -3,7 +3,6 @@ import pytest
 from hypothesis import assume, given
 
 from eth.codecs.abi.exceptions import ParseError
-from eth.codecs.abi.formatter import Formatter
 from eth.codecs.abi.parser import Parser
 from tests.strategies.abi.nodes import Node
 
@@ -11,7 +10,7 @@ from tests.strategies.abi.nodes import Node
 @given(Node)
 def test_parser(node):
     # generate a random valid abi type node format as typestr and then parse it
-    assert Parser.parse(Formatter.format(node)) == node
+    assert Parser.parse(str(node)) == node
 
 
 @pytest.mark.parametrize("typestr", ["bytes1233", "bytes592309", "bytes8193"])
