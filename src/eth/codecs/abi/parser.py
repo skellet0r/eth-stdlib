@@ -27,6 +27,7 @@ class Parser:
         ARRAY_PATTERN: compiled regex for matching array schemas.
         TUPLE_PATTERN: compiled regex for matching tuple schemas.
         VALUE_PATTERN: compiled regex for matching value schemas:
+
             * fixed-width byte arrays
             * integers
             * fixed-point decimals

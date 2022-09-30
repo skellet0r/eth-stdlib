@@ -83,8 +83,7 @@ class Decoder:
     def visit_AddressNode(cls, node: nodes.AddressNode, value: bytes) -> str:
         """Decode an address.
 
-        Note:
-            The returned address value is not checksummed.
+        The returned address value is not checksummed.
 
         Parameters:
             node: An address ABI type node.
@@ -249,9 +248,8 @@ class Decoder:
     def visit_StringNode(cls, node: nodes.StringNode, value: bytes) -> str:
         """Decode a string.
 
-        Note:
-            Uses 'surrogateescape' to handle decoding errors.
-            See `error handlers <https://docs.python.org/3/library/codecs.html#error-handlers>`_
+        Uses 'surrogateescape' to handle decoding errors.
+        See `error handlers <https://docs.python.org/3/library/codecs.html#error-handlers>`_
 
         Parameters:
             node: A string ABI type node.

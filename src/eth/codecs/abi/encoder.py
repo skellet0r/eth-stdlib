@@ -49,9 +49,8 @@ class Encoder:
     def visit_AddressNode(cls, node: nodes.AddressNode, value: str) -> bytes:
         """Encode an address.
 
-        Note:
-            Address values are encoded the same as the uint160 ABI type. There is no
-            verification of whether the value is checksummed or not.
+        Address values are encoded the same as the uint160 ABI type. There is no
+        verification of whether the value is checksummed or not.
 
         Parameters:
             node: The address ABI node type.
@@ -81,19 +80,18 @@ class Encoder:
     def visit_ArrayNode(cls, node: nodes.ArrayNode, value: list | tuple) -> bytes:
         """Encode an array.
 
-        Note:
-            There are 4 possible cases when encoding an array:
+        There are 4 possible cases when encoding an array:
 
-                #. static array with static elements
-                #. dynamic array with static elements
-                #. static array with dynamic elements
-                #. dynamic array with dynamic elements
+            #. static array with static elements
+            #. dynamic array with static elements
+            #. static array with dynamic elements
+            #. dynamic array with dynamic elements
 
-            Arrays with dynamic length are encoded with the number of elements prepended to the
-            static data section. Arrays with dynamic elements have pointers in the static data
-            section, pointing to the start of the encoded element in the dynamic data section.
+        Arrays with dynamic length are encoded with the number of elements prepended to the
+        static data section. Arrays with dynamic elements have pointers in the static data
+        section, pointing to the start of the encoded element in the dynamic data section.
 
-            See `ABIv2 Spec <https://docs.soliditylang.org/en/develop/abi-spec.html>`_.
+        See `ABIv2 Spec <https://docs.soliditylang.org/en/develop/abi-spec.html>`_.
 
         Parameters:
             node: The array ABI node type.
@@ -144,8 +142,7 @@ class Encoder:
     def visit_BooleanNode(cls, node: nodes.BooleanNode, value: bool) -> bytes:
         """Encode a boolean.
 
-        Note:
-            Booleans are encoded the same as a uint256, but with the type bounds being [0, 1].
+        Booleans are encoded the same as a uint256, but with the type bounds being [0, 1].
 
         Parameters:
             node: The boolean ABI node type.
@@ -165,10 +162,9 @@ class Encoder:
     def visit_BytesNode(node: nodes.BytesNode, value: bytes) -> bytes:
         """Encode a byte array.
 
-        Note:
-            Fixed width byte arrays are encoded by padding the left, up to the width, with null
-            bytes. Whereas a dynamic byte array is encoded by prepending the value with the encoded
-            length of the value.
+        Fixed width byte arrays are encoded by padding the left, up to the width, with null
+        bytes. Whereas a dynamic byte array is encoded by prepending the value with the encoded
+        length of the value.
 
         Parameters:
             node: The bytes ABI node type.
@@ -254,8 +250,7 @@ class Encoder:
     def visit_StringNode(cls, node: nodes.StringNode, value: str) -> bytes:
         """Encode a string.
 
-        Note:
-            Strings are encoded exactly the same as dynamic byte arrays.
+        Strings are encoded exactly the same as dynamic byte arrays.
 
         Parameters:
             node: The string ABI node type.
@@ -278,14 +273,13 @@ class Encoder:
     def visit_TupleNode(cls, node: nodes.TupleNode, value: list | tuple) -> bytes:
         """Encode a tuple.
 
-        Note:
-            There are 2 possible cases when encoding a tuple:
+        There are 2 possible cases when encoding a tuple:
 
-                #. All components are static
-                #. One or more components are dynamic
+            #. All components are static
+            #. One or more components are dynamic
 
-            Similar to arrays, dynamic data is encoded and placed in the dynamic data section,
-            and a pointer is placed in the static data section.
+        Similar to arrays, dynamic data is encoded and placed in the dynamic data section,
+        and a pointer is placed in the static data section.
 
         Parameters:
             node: The tuple ABI node type.
