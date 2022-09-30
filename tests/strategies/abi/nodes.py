@@ -13,50 +13,55 @@ MAXDEPTH = 3
 bits = st.sampled_from(range(8, 264, 8))
 
 # atomic types
-Address = st.just(nodes.Address())
-Bool = st.just(nodes.Bool())
-Bytes = st.builds(nodes.Bytes, st.just(-1) | st.integers(1, 32))
-Fixed = st.builds(nodes.Fixed, bits, st.integers(0, 80), st.booleans())
-Integer = st.builds(nodes.Integer, bits, st.booleans())
-String = st.just(nodes.String())
+Address = st.builds(nodes.AddressNode)
+Bool = st.builds(nodes.BooleanNode)
+DynamicBytes = st.builds(nodes.BytesNode)
+FixedBytes = st.builds(nodes.BytesNode, st.integers(1, 32))
+Fixed = st.builds(nodes.FixedNode, bits, st.integers(0, 80), st.booleans())
+Integer = st.builds(nodes.IntegerNode, bits, st.booleans())
+String = st.builds(nodes.StringNode)
 
 # all atomic types
-Atomic = st.one_of(Address, Bool, Bytes, Fixed, Integer, String)
+Atomic = st.one_of(Address, Bool, FixedBytes, Fixed, Integer, String)
 
 # static types, occupy 32 bytes
-Static = Address | Bool | st.builds(nodes.Bytes, st.integers(1, 32)) | Fixed | Integer
+Static = Address | Bool | FixedBytes | Fixed | Integer
 # dynamic types, occupy 32 bytes at minimum
-Dynamic = st.just(nodes.Bytes(-1)) | String
+Dynamic = DynamicBytes | String
 
 # variations of array types
-SS_Array = st.builds(nodes.Array, Static, st.integers(1, 10))
-DS_Array = st.builds(nodes.Array, Static, st.just(-1))
+SS_Array = st.builds(nodes.ArrayNode, Static, st.integers(1, MAXSIZE))
+DS_Array = st.builds(nodes.ArrayNode, Static, st.none())
 
-SD_Array = st.builds(nodes.Array, Dynamic, st.integers(1, 10))
-DD_Array = st.builds(nodes.Array, Dynamic, st.just(-1))
+SD_Array = st.builds(nodes.ArrayNode, Dynamic, st.integers(1, MAXSIZE))
+DD_Array = st.builds(nodes.ArrayNode, Dynamic, st.none())
 
 # variation of tuple types
-S_Tuple = st.builds(nodes.Tuple, st.builds(tuple, st.lists(Static, min_size=1, max_size=10)))
-D_Tuple = st.builds(nodes.Tuple, st.builds(tuple, st.lists(Dynamic, min_size=1, max_size=10)))
+S_Tuple = st.builds(
+    nodes.TupleNode, st.builds(tuple, st.lists(Static, min_size=1, max_size=MAXSIZE))
+)
+D_Tuple = st.builds(
+    nodes.TupleNode, st.builds(tuple, st.lists(Dynamic, min_size=1, max_size=MAXSIZE))
+)
 
 
 @st.deferred
 def Array():
-    size = st.just(-1) | st.integers(1, MAXSIZE)
-    array = st.builds(nodes.Array, Atomic | Tuple, size)
+    size = st.none() | st.integers(1, MAXSIZE)
+    array = st.builds(nodes.ArrayNode, Atomic | Tuple, size)
     # top-level will always be an array
-    return st.recursive(array, lambda s: st.builds(nodes.Array, s, size), max_leaves=MAXDEPTH)
+    return st.recursive(array, lambda s: st.builds(nodes.ArrayNode, s, size), max_leaves=MAXDEPTH)
 
 
 @st.deferred
 def Tuple():
     components = st.builds(tuple, st.lists(Atomic | Array, min_size=1, max_size=MAXSIZE))
-    tuple_ = st.builds(nodes.Tuple, components)
+    tuple_ = st.builds(nodes.TupleNode, components)
     # top-level will always be a tuple
     return st.recursive(
         tuple_,
         lambda s: st.builds(
-            nodes.Tuple, st.builds(tuple, st.lists(s, min_size=1, max_size=MAXSIZE))
+            nodes.TupleNode, st.builds(tuple, st.lists(s, min_size=1, max_size=MAXSIZE))
         ),
         max_leaves=MAXDEPTH,
     )
@@ -64,8 +69,10 @@ def Tuple():
 
 # recursive strategy for composite types - top-level can be any valid abi type
 def extend(base: st.SearchStrategy) -> st.SearchStrategy:
-    arrays = st.builds(nodes.Array, base, st.just(-1) | st.integers(1, MAXSIZE))
-    tuples = st.builds(nodes.Tuple, st.builds(tuple, st.lists(base, min_size=1, max_size=MAXSIZE)))
+    arrays = st.builds(nodes.ArrayNode, base, st.none() | st.integers(1, MAXSIZE))
+    tuples = st.builds(
+        nodes.TupleNode, st.builds(tuple, st.lists(base, min_size=1, max_size=MAXSIZE))
+    )
     return arrays | tuples
 
 

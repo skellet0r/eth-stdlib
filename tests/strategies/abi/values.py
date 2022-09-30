@@ -1,10 +1,8 @@
-import decimal
 import functools
 
 import hypothesis.strategies as st
 
 from eth.codecs.abi import nodes
-from eth.codecs.abi.formatter import Formatter
 from eth.codecs.abi.parser import Parser
 
 
@@ -13,7 +11,7 @@ class StrategyMaker:
 
     @classmethod
     @functools.cache
-    def make_strategy(cls, node: nodes.Node) -> st.SearchStrategy:
+    def make_strategy(cls, node: nodes.ABITypeNode) -> st.SearchStrategy:
         """Create a hypothesis search strategy for a given ABI type.
 
         Parameters:
@@ -25,57 +23,43 @@ class StrategyMaker:
         return node.accept(cls)
 
     @classmethod
-    def visit_Address(cls, node: nodes.Address) -> st.SearchStrategy:
+    def visit_AddressNode(cls, node: nodes.AddressNode) -> st.SearchStrategy:
         # encoding an address, converts it to an int, decoding does the reverse
         # since 0xAF and 0xaf are the same value in hex, this is fine, however,
         # when comparing strings they are not the same.
         return st.from_regex(r"0x[a-f0-9]{40}", fullmatch=True)
 
     @classmethod
-    def visit_Array(cls, node: nodes.Array) -> st.SearchStrategy:
-        st_subtype = cls.make_strategy(node.subtype)
-        min_size, max_size = (0, None) if node.size == -1 else (node.size, node.size)
+    def visit_ArrayNode(cls, node: nodes.ArrayNode) -> st.SearchStrategy:
+        st_subtype = cls.make_strategy(node.etype)
+        min_size, max_size = (0, None) if node.length == -1 else (node.length, node.length)
         return st.lists(st_subtype, min_size=min_size, max_size=max_size)
 
     @staticmethod
-    def visit_Bool(node: nodes.Bool) -> st.SearchStrategy:
+    def visit_BoolNode(node: nodes.BooleanNode) -> st.SearchStrategy:
         return st.booleans()
 
     @staticmethod
-    def visit_Bytes(node: nodes.Bytes) -> st.SearchStrategy:
-        min_size, max_size = (0, None) if node.size == -1 else (node.size, node.size)
+    def visit_BytesNode(node: nodes.BytesNode) -> st.SearchStrategy:
+        min_size, max_size = (0, None) if node.size is None else (node.size, node.size)
         return st.binary(min_size=min_size, max_size=max_size)
 
     @staticmethod
-    def visit_Fixed(node: nodes.Fixed) -> st.SearchStrategy:
+    def visit_FixedNode(node: nodes.FixedNode) -> st.SearchStrategy:
         # calculate the integer type bounds
-        ilo, ihi = 0, 2**node.size - 1
-        if node.is_signed:
-            subtrahend = 2 ** (node.size - 1)
-            ilo, ihi = ilo - subtrahend, ihi - subtrahend
-
-        with decimal.localcontext(decimal.Context(prec=128)):
-            # finalize type bound calculation by dividing by scalar 10**-precision
-            lo, hi = [decimal.Decimal(v).scaleb(-node.precision) for v in [ilo, ihi]]
-
-        return st.decimals(lo, hi, places=node.precision)
+        return st.decimals(*node.bounds, places=node.precision)
 
     @staticmethod
-    def visit_Integer(node: nodes.Integer) -> st.SearchStrategy:
-        lo, hi = 0, 2**node.size - 1
-        if node.is_signed:
-            subtrahend = 2 ** (node.size - 1)
-            lo, hi = lo - subtrahend, hi - subtrahend
-
-        return st.integers(lo, hi)
+    def visit_IntegerNode(node: nodes.IntegerNode) -> st.SearchStrategy:
+        return st.integers(*node.bounds)
 
     @staticmethod
-    def visit_String(node: nodes.String) -> st.SearchStrategy:
+    def visit_StringNode(node: nodes.StringNode) -> st.SearchStrategy:
         return st.text()
 
     @classmethod
-    def visit_Tuple(cls, node: nodes.Tuple) -> st.SearchStrategy:
-        inner_strategies = [cls.make_strategy(component) for component in node.components]
+    def visit_TupleNode(cls, node: nodes.TupleNode) -> st.SearchStrategy:
+        inner_strategies = [cls.make_strategy(ctyp) for ctyp in node.ctypes]
         return st.tuples(*inner_strategies)
 
 
@@ -98,4 +82,4 @@ def strategy(draw: st.DrawFn, typestr: str | st.SearchStrategy):
 @st.composite
 def typestr_and_value(draw: st.DrawFn, st_node: st.SearchStrategy):
     node = draw(st_node)
-    return Formatter.format(node), draw(StrategyMaker.make_strategy(node))
+    return str(node), draw(StrategyMaker.make_strategy(node))
