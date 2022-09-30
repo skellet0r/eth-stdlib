@@ -21,17 +21,20 @@ from typing import Any
 
 from eth.codecs.abi import nodes
 from eth.codecs.abi.exceptions import DecodeError
-from eth.codecs.abi.formatter import Formatter
 
 
 class Decoder:
-    """Ethereum ABI Decoder."""
+    """Ethereum contract ABIv2 decoder.
+
+    Attributes:
+        WORD_MASK: A bit mask equal to ``2**256 - 1``
+    """
 
     WORD_MASK = 2**256 - 1
 
     @classmethod
-    def decode(cls, node: nodes.Node, value: bytes) -> Any:
-        """Decode a value according to an ABI type.
+    def decode(cls, node: nodes.ABITypeNode, value: bytes) -> Any:
+        """Decode a value.
 
         Parameters:
             node: The ABI type to decode the value as.
@@ -41,31 +44,32 @@ class Decoder:
             The decoded value.
 
         Raises:
-            DecodeError: If value, or sub-component thereof, can't be decoded.
-            TypeError: If node argument is not an instance of `nodes.Node`, or if value argument
-            is not an instance of `bytes`.
+            DecodeError: If ``value`` can't be decoded.
+            TypeError: If the ``node`` argument is not an instance of `nodes.ABITypeNode`,
+                or if the ``value`` argument is not an instance of ``bytes``.
         """
         try:
-            assert isinstance(node, nodes.Node), ("node", type(node).__qualname__)
-            assert isinstance(value, bytes), ("value", type(value).__qualname__)
+            assert isinstance(node, nodes.ABITypeNode), (type(node).__qualname__, "node")
+            assert isinstance(value, bytes), (type(value).__qualname__, "value")
         except AssertionError as e:
-            param, typ = e.args[0]
+            typ, param = e.args[0]
             raise TypeError(f"Received invalid type {typ!r} for parameter {param!r}")
         return node.accept(cls, value)
 
     @classmethod
-    def validate_atom(cls, node: nodes.Node, value: bytes, bits: int):
+    def validate_atom(cls, node: nodes.ABITypeNode, value: bytes, bits: int):
         """Validate an atomic type is within its type bounds.
 
         Parameters:
             node: An ABI type node.
             value: The bytes to validate.
-            bits: The number of bits the value should occupy.
+            bits: The number of bits the value should occupy. Negative values shift
+                left, and positive values shift right.
 
         Raises:
-            DecodeError: If value length is not 32 bytes, or the value is outside of
-            the type bounds.
+            DecodeError: If the value can't be decoded.
         """
+        # if bits is negative, shift to the left, otherwise shift to the right
         shift = lshift if bits < 0 else rshift
         try:
             assert len(value) == 32, "Value is not 32 bytes"
@@ -73,57 +77,108 @@ class Decoder:
             # mask to fit only word-length
             assert (sval & cls.WORD_MASK) == 0, "Value outside type bounds"
         except AssertionError as e:
-            raise DecodeError(Formatter.format(node), value, e.args[0]) from e
+            raise DecodeError(str(node), value, e.args[0])
 
     @classmethod
-    def visit_Address(cls, node: nodes.Address, value: bytes) -> str:
+    def visit_Address(cls, node: nodes.AddressNode, value: bytes) -> str:
+        """Decode an address.
+
+        Note:
+            The returned address value is not checksummed.
+
+        Parameters:
+            node: An address ABI type node.
+            value: The bytes value to decode.
+
+        Returns:
+            The decoded address as a string.
+
+        Raises:
+            DecodeError: If the value can't be decoded.
+        """
         cls.validate_atom(node, value, 160)
 
         return f"0x{value[-20:].hex()}"
 
     @classmethod
-    def visit_Array(cls, node: nodes.Array, value: bytes) -> list[Any]:
-        size, val = node.size, value
-        if node.size == -1:
-            # dynamic array is atleast 32 bytes (the size of the array)
-            if len(value) < 32:
-                raise DecodeError(Formatter.format(node), value, "Dynamic array value invalid size")
+    def visit_Array(cls, node: nodes.ArrayNode, value: bytes) -> list[Any]:
+        """Decode an array.
 
-            size, val = int.from_bytes(value[:32], "big"), value[32:]
-            if size == 0:
-                # size can only be 0 for dynamic arrays, in which case return an empty list
+        Parameters:
+            node: An array ABI type node.
+            value: The bytes value to decode.
+
+        Returns:
+            The decoded array as a list.
+
+        Raises:
+            DecodeError: If the value can't be decoded.
+        """
+        length, val = node.length, value
+        if node.length is None:
+            # dynamic array is atleast 32 bytes
+            if len(value) < 32:
+                raise DecodeError(str(node), value, "Dynamic array value has invalid length")
+
+            length, val = int.from_bytes(value[:32], "big"), value[32:]
+            if length == 0:
+                # length can only be 0 for dynamic arrays, in which case return an empty list
                 return []
-        elif len(value) < len(node.subtype) * size:
-            # should be equal to the product of the subtype length with the array size
-            raise DecodeError(Formatter.format(node), value, "Static array value invalid size")
+        elif len(value) < node.etype.width * length:
+            # should be equal to the product of the subtype length with the array length
+            raise DecodeError(str(node), value, "Static array value invalid length")
 
         # case 1: static array w/ static elements
         # case 2: dynamic array w/ static elements
-        if not node.subtype.is_dynamic:
-            q, r = divmod(len(val), size)
+        if not node.etype.is_dynamic:
+            q, r = divmod(len(val), length)
             if r != 0:
-                raise DecodeError(Formatter.format(node), value, "Invalid array size")
+                raise DecodeError(str(node), value, "Invalid array size")
             return [cls.decode(node.subtype, val[i : i + q]) for i in range(0, len(val), q)]
 
         # 3) static array, w/ dynamic elements
         # 4) dynamic array, w/ dynamic elements
-        # subtype is dynamic so their is a head and tail, the head contains pointers to the tail
+        # element type is dynamic so their is a head + tail, the head contains pointers to the tail
 
         # generate the list of pointers (each pointer is 32 bytes)
-        ptrs = [int.from_bytes(val[i : i + 32], "big") for i in range(0, size * 32, 32)]
+        ptrs = [int.from_bytes(val[i : i + 32], "big") for i in range(0, length * 32, 32)]
         # generate the list of data, slice the data section from last pointer to end as last item
         data = [val[a:b] for a, b in zip(ptrs, ptrs[1:])] + [val[ptrs[-1] :]]
         # decode each element from the data section, the subtype will do validation
-        return [cls.decode(node.subtype, v) for v in data]
+        return [cls.decode(node.etype, v) for v in data]
 
     @classmethod
-    def visit_Bool(cls, node: nodes.Bool, value: bytes) -> bool:
+    def visit_Bool(cls, node: nodes.BooleanNode, value: bytes) -> bool:
+        """Decode a boolean.
+
+        Parameters:
+            node: A boolean ABI type node.
+            value: The bytes value to decode.
+
+        Returns:
+            The decoded boolean.
+
+        Raises:
+            DecodeError: If the value can't be decoded.
+        """
         cls.validate_atom(node, value, 1)
 
         return bool.from_bytes(value, "big")
 
     @classmethod
-    def visit_Bytes(cls, node: nodes.Bytes, value: bytes) -> bytes:
+    def visit_Bytes(cls, node: nodes.BytesNode, value: bytes) -> bytes:
+        """Decode a byte array.
+
+        Parameters:
+            node: A bytes ABI type node.
+            value: The bytes value to decode.
+
+        Returns:
+            The decoded byte array.
+
+        Raises:
+            DecodeError: If the value can't be decoded.
+        """
         if not node.is_dynamic:
             # fixed-width bytes are right padded with null bytes
             # therefore need to shift left
@@ -136,70 +191,118 @@ class Decoder:
             size = int.from_bytes(value[:32], "big")
             assert len(value[32 : 32 + size]) == size, "Data section is not the correct size"
         except AssertionError as e:
-            raise DecodeError("bytes", value, e.args[0]) from e
+            raise DecodeError("bytes", value, e.args[0])
 
         return value[32 : 32 + size]
 
     @classmethod
-    def visit_Fixed(cls, node: nodes.Fixed, value: bytes) -> decimal.Decimal:
+    def visit_Fixed(cls, node: nodes.FixedNode, value: bytes) -> decimal.Decimal:
+        """Decode a fixed point decimal.
+
+        Parameters:
+            node: A fixed point decimal ABI type node.
+            value: The bytes value to decode.
+
+        Returns:
+            The decoded fixed point decimal.
+
+        Raises:
+            DecodeError: If the value can't be decoded.
+        """
         try:
             # decode as an integer
-            ival = cls.decode(nodes.Integer(node.size, node.is_signed), value)
+            ival = cls.decode(nodes.Integer(node.bits, node.is_signed), value)
         except DecodeError as e:
-            raise DecodeError(Formatter.format(node), value, e.msg)
+            raise DecodeError(str(node), value, e.msg)
 
-        with decimal.localcontext(decimal.Context(prec=128)):
+        with decimal.localcontext(decimal.Context(prec=80)):
             # return shifted value
             return decimal.Decimal(ival).scaleb(-node.precision)
 
     @staticmethod
-    def visit_Integer(node: nodes.Integer, value: bytes) -> int:
+    def visit_Integer(node: nodes.IntegerNode, value: bytes) -> int:
+        """Decode an integer.
+
+        Parameters:
+            node: An integer ABI type node.
+            value: The bytes value to decode.
+
+        Returns:
+            The decoded integer.
+
+        Raises:
+            DecodeError: If the value can't be decoded.
+        """
         try:
             assert len(value) == 32, "Value is not 32 bytes"
 
-            # calculate type bounds
-            lo, hi = 0, 2**node.size - 1
-            if node.is_signed:
-                subtrahend = 2 ** (node.size - 1)
-                lo, hi = lo - subtrahend, hi - subtrahend
-
             # convert the bytes to an integer
             ival = int.from_bytes(value, "big", signed=node.is_signed)
+
+            lo, hi = node.bounds
             assert lo <= ival <= hi, "Value is outside type bounds"
             return ival
         except AssertionError as e:
-            raise DecodeError(Formatter.format(node), value, e.args[0])
+            raise DecodeError(str(node), value, e.args[0])
 
     @classmethod
-    def visit_String(cls, node: nodes.String, value: bytes) -> str:
+    def visit_String(cls, node: nodes.StringNode, value: bytes) -> str:
+        """Decode a string.
+
+        Note:
+            Uses 'surrogateescape' to handle decoding errors.
+            See `error handlers <https://docs.python.org/3/library/codecs.html#error-handlers>`_
+
+        Parameters:
+            node: A string ABI type node.
+            value: The bytes value to decode.
+
+        Returns:
+            The decoded string.
+
+        Raises:
+            DecodeError: If the value can't be decoded.
+        """
         try:
-            return cls.decode(nodes.Bytes(-1), value).decode()
+            return cls.decode(nodes.Bytes(), value).decode(errors="surrogateescape")
         except DecodeError as e:
             raise DecodeError("string", value, e.msg) from e
 
     @classmethod
-    def visit_Tuple(cls, node: nodes.Tuple, value: bytes) -> tuple:
+    def visit_Tuple(cls, node: nodes.TupleNode, value: bytes) -> tuple:
+        """Decode a tuple.
+
+        Parameters:
+            node: A tuple ABI type node.
+            value: The bytes value to decode.
+
+        Returns:
+            The decoded tuple.
+
+        Raises:
+            DecodeError: If the value can't be decoded.
+        """
         # value size should be >= the sum of the length of its components
-        if len(value) < sum([len(elem) for elem in node.components]):
-            raise DecodeError(Formatter.format(node), value, "Value length is less than expected")
+        if len(value) < sum((elem.width for elem in node.ctypes)):
+            raise DecodeError(str(node), value, "Value length is less than expected")
 
         pos, raw_head = 0, []
-        for typ in node.components:
-            raw_head.append(value[pos : pos + len(typ)])
-            pos += len(typ)
+        for ctyp in node.ctypes:
+            raw_head.append(value[pos : pos + ctyp.width])
+            pos += ctyp.width
 
         if not node.is_dynamic:
             # no tail section
-            return tuple([cls.decode(typ, val) for typ, val in zip(node.components, raw_head)])
+            return tuple((cls.decode(ctyp, val) for ctyp, val in zip(node.ctypes, raw_head)))
 
-        typ_and_vals = list(zip(node.components, raw_head))
+        ctyps_and_vals = list(zip(node.ctypes, raw_head))
 
         # ptrs are in the head section, convert them to ints in a single list
-        ptrs = [int.from_bytes(val, "big") for typ, val in typ_and_vals if typ.is_dynamic]
+        ptrs = [int.from_bytes(val, "big") for ctyp, val in ctyps_and_vals if ctyp.is_dynamic]
         # for each pointer copy the data from the dynamic section similar to array decoding
         data = deque([value[a:b] for a, b in zip(ptrs, ptrs[1:])] + [value[ptrs[-1] :]])
         # replace each ptr with its data - generator
-        head = [data.popleft() if typ.is_dynamic else val for typ, val in typ_and_vals]
+        head = [data.popleft() if ctyp.is_dynamic else val for ctyp, val in ctyps_and_vals]
 
         # return the decoded elements
-        return tuple([cls.decode(typ, val) for typ, val in zip(node.components, head)])
+        return tuple([cls.decode(typ, val) for typ, val in zip(node.ctypes, head)])
