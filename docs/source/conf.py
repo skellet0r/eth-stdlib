@@ -1,3 +1,11 @@
+import os
+
+if os.environ.get("READTHEDOCS"):
+    import pathlib
+    import sys
+
+    sys.path.insert(0, str(pathlib.Path("../src/").resolve()))
+
 # Configuration file for the Sphinx documentation builder.
 #
 # For the full list of built-in configuration values, see the documentation:
