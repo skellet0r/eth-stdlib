@@ -40,14 +40,13 @@ After installing locally, the ``eth`` namespace will be available to import in P
    >>> abi.decode("uint8", b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x10')
    16
 
-.. toctree::
-   :maxdepth: 2
-   :caption: Table of Contents:
-
-   codecs
-
 Indices and tables
 ==================
+
+.. toctree::
+   :maxdepth: 2
+
+   codecs
 
 * :ref:`genindex`
 * :ref:`modindex`
