@@ -33,3 +33,8 @@ exclude_patterns = []
 
 html_theme = "nature"
 html_static_path = ["_static"]
+
+# -- autodoc extension configuration ---------------------------------------------------
+# https://www.sphinx-doc.org/en/master/usage/extensions/autodoc.html#configuration
+
+autodoc_member_order = "bysource"

@@ -1,10 +1,10 @@
-codecs
-======
+Codecs - Encoders and Decoders
+==============================
 
-Library of encoders and decoders.
+Collection of encoders and decoders.
 
-.. toctree::
-   :maxdepth: 2
-   :caption: Contents:
+Ethereum Contract ABIv2
+-----------------------
 
-   abi/index
+.. automodule:: eth.codecs.abi
+   :members:
