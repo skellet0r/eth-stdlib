@@ -6,11 +6,13 @@
 Welcome to eth-stdlib's documentation!
 ======================================
 
+Library of pure python code for Ethereum development.
+
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
 
-
+   codecs/index
 
 Indices and tables
 ==================
