@@ -28,6 +28,13 @@ def encode(schema: str, value: Any) -> bytes:
         schema: An ABI type string.
         value: The value to encode.
 
+    Example:
+
+        >>> encode("uint256", 42).hex()
+        '000000000000000000000000000000000000000000000000000000000000002a'
+        >>> encode("int128", -42).hex()
+        'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffd6'
+
     Returns:
         The encoded value.
 
@@ -44,6 +51,13 @@ def decode(schema: str, value: bytes) -> Any:
     Parameters:
         schema: An ABI type string.
         value: The value to decode.
+
+    Example:
+
+        >>> decode("uint256", encode("uint256", 42))
+        42
+        >>> decode("int128", encode("int128", -42))
+        -42
 
     Returns:
         The decoded value.
