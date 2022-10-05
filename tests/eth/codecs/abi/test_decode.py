@@ -25,6 +25,11 @@ def test_decoding(value):
     assert decode(typestr, encode(typestr, val)) == val
 
 
+def test_decoding_disable_checksum():
+    value = b"\x00" * 12 + bytes.fromhex("Cd2a3d9f938e13Cd947eC05ABC7fe734df8DD826")
+    assert decode("address", value, checksum=False) == "0xcd2a3d9f938e13cd947ec05abc7fe734df8dd826"
+
+
 def test_decode_raises_for_invalid_arguments():
     for args in [({}, b""), (IntegerNode(256, False), {})]:
         with pytest.raises(TypeError, match=r"Received invalid type '\w+' for parameter '\w+'"):

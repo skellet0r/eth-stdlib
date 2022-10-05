@@ -21,6 +21,7 @@ from typing import Any
 
 from eth.codecs.abi import nodes
 from eth.codecs.abi.exceptions import DecodeError
+from eth.codecs.utils import checksum_encode
 
 
 class Decoder:
@@ -33,7 +34,7 @@ class Decoder:
     WORD_MASK = 2**256 - 1
 
     @classmethod
-    def decode(cls, node: nodes.ABITypeNode, value: bytes) -> Any:
+    def decode(cls, node: nodes.ABITypeNode, value: bytes, **kwargs: Any) -> Any:
         """Decode a value.
 
         Parameters:
@@ -54,7 +55,7 @@ class Decoder:
         except AssertionError as e:
             typ, param = e.args[0]
             raise TypeError(f"Received invalid type {typ!r} for parameter {param!r}")
-        return node.accept(cls, value)
+        return node.accept(cls, value, **kwargs)
 
     @classmethod
     def validate_atom(cls, node: nodes.ABITypeNode, value: bytes, bits: int):
@@ -80,14 +81,15 @@ class Decoder:
             raise DecodeError(str(node), value, e.args[0])
 
     @classmethod
-    def visit_AddressNode(cls, node: nodes.AddressNode, value: bytes) -> str:
+    def visit_AddressNode(
+        cls, node: nodes.AddressNode, value: bytes, checksum: bool = True, **kwargs: Any
+    ) -> str:
         """Decode an address.
-
-        The returned address value is not checksummed.
 
         Parameters:
             node: An address ABI type node.
             value: The bytes value to decode.
+            checksum: Whether to checksum encode the result.
 
         Returns:
             The decoded address as a string.
@@ -97,10 +99,12 @@ class Decoder:
         """
         cls.validate_atom(node, value, 160)
 
+        if checksum:
+            return checksum_encode(value[-20:])
         return f"0x{value[-20:].hex()}"
 
     @classmethod
-    def visit_ArrayNode(cls, node: nodes.ArrayNode, value: bytes) -> list[Any]:
+    def visit_ArrayNode(cls, node: nodes.ArrayNode, value: bytes, **kwargs: Any) -> list[Any]:
         """Decode an array.
 
         Parameters:
@@ -133,7 +137,7 @@ class Decoder:
             q, r = divmod(len(val), length)
             if r != 0:
                 raise DecodeError(str(node), value, "Invalid array size")
-            return [cls.decode(node.etype, val[i : i + q]) for i in range(0, len(val), q)]
+            return [cls.decode(node.etype, val[i : i + q], **kwargs) for i in range(0, len(val), q)]
 
         # 3) static array, w/ dynamic elements
         # 4) dynamic array, w/ dynamic elements
@@ -144,10 +148,10 @@ class Decoder:
         # generate the list of data, slice the data section from last pointer to end as last item
         data = [val[a:b] for a, b in zip(ptrs, ptrs[1:])] + [val[ptrs[-1] :]]
         # decode each element from the data section, the subtype will do validation
-        return [cls.decode(node.etype, v) for v in data]
+        return [cls.decode(node.etype, v, **kwargs) for v in data]
 
     @classmethod
-    def visit_BooleanNode(cls, node: nodes.BooleanNode, value: bytes) -> bool:
+    def visit_BooleanNode(cls, node: nodes.BooleanNode, value: bytes, **kwargs: Any) -> bool:
         """Decode a boolean.
 
         Parameters:
@@ -165,7 +169,7 @@ class Decoder:
         return bool.from_bytes(value, "big")
 
     @classmethod
-    def visit_BytesNode(cls, node: nodes.BytesNode, value: bytes) -> bytes:
+    def visit_BytesNode(cls, node: nodes.BytesNode, value: bytes, **kwargs: Any) -> bytes:
         """Decode a byte array.
 
         Parameters:
@@ -195,7 +199,7 @@ class Decoder:
         return value[32 : 32 + size]
 
     @classmethod
-    def visit_FixedNode(cls, node: nodes.FixedNode, value: bytes) -> decimal.Decimal:
+    def visit_FixedNode(cls, node: nodes.FixedNode, value: bytes, **kwargs: Any) -> decimal.Decimal:
         """Decode a fixed point decimal.
 
         Parameters:
@@ -210,7 +214,7 @@ class Decoder:
         """
         try:
             # decode as an integer
-            ival = cls.decode(nodes.IntegerNode(node.bits, node.is_signed), value)
+            ival = cls.decode(nodes.IntegerNode(node.bits, node.is_signed), value, **kwargs)
         except DecodeError as e:
             raise DecodeError(str(node), value, e.msg)
 
@@ -219,7 +223,7 @@ class Decoder:
             return decimal.Decimal(ival).scaleb(-node.precision)
 
     @staticmethod
-    def visit_IntegerNode(node: nodes.IntegerNode, value: bytes) -> int:
+    def visit_IntegerNode(node: nodes.IntegerNode, value: bytes, **kwargs: Any) -> int:
         """Decode an integer.
 
         Parameters:
@@ -245,7 +249,7 @@ class Decoder:
             raise DecodeError(str(node), value, e.args[0])
 
     @classmethod
-    def visit_StringNode(cls, node: nodes.StringNode, value: bytes) -> str:
+    def visit_StringNode(cls, node: nodes.StringNode, value: bytes, **kwargs) -> str:
         """Decode a string.
 
         Uses 'surrogateescape' to handle decoding errors.
@@ -262,12 +266,12 @@ class Decoder:
             DecodeError: If the value can't be decoded.
         """
         try:
-            return cls.decode(nodes.BytesNode(), value).decode(errors="surrogateescape")
+            return cls.decode(nodes.BytesNode(), value, **kwargs).decode(errors="surrogateescape")
         except DecodeError as e:
             raise DecodeError("string", value, e.msg) from e
 
     @classmethod
-    def visit_TupleNode(cls, node: nodes.TupleNode, value: bytes) -> tuple:
+    def visit_TupleNode(cls, node: nodes.TupleNode, value: bytes, **kwargs) -> tuple:
         """Decode a tuple.
 
         Parameters:
@@ -291,7 +295,9 @@ class Decoder:
 
         if not node.is_dynamic:
             # no tail section
-            return tuple((cls.decode(ctyp, val) for ctyp, val in zip(node.ctypes, raw_head)))
+            return tuple(
+                (cls.decode(ctyp, val, **kwargs) for ctyp, val in zip(node.ctypes, raw_head))
+            )
 
         ctyps_and_vals = list(zip(node.ctypes, raw_head))
 
@@ -303,4 +309,4 @@ class Decoder:
         head = [data.popleft() if ctyp.is_dynamic else val for ctyp, val in ctyps_and_vals]
 
         # return the decoded elements
-        return tuple([cls.decode(typ, val) for typ, val in zip(node.ctypes, head)])
+        return tuple([cls.decode(typ, val, **kwargs) for typ, val in zip(node.ctypes, head)])

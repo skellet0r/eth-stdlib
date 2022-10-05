@@ -45,12 +45,16 @@ def encode(schema: str, value: Any) -> bytes:
     return Encoder.encode(Parser.parse(schema), value)
 
 
-def decode(schema: str, value: bytes) -> Any:
+def decode(schema: str, value: bytes, **kwargs) -> Any:
     """Decode a value according to an ABI schema.
 
     Parameters:
         schema: An ABI type string.
         value: The value to decode.
+        **kwargs: Additional keyword arguments to pass on to ABI type decoder functions.
+
+    Keyword Arguments:
+        checksum (bool): Whether to checksum encode decoded address values, defaults to ``True``.
 
     Example:
 
@@ -66,4 +70,4 @@ def decode(schema: str, value: bytes) -> Any:
         DecodeError: If value, or an element thereof, is not decodable.
         ParseError: If ``schema`` is an invalid ABI type.
     """
-    return Decoder.decode(Parser.parse(schema), value)
+    return Decoder.decode(Parser.parse(schema), value, **kwargs)
