@@ -4,6 +4,7 @@ import hypothesis.strategies as st
 
 from eth.codecs.abi import nodes
 from eth.codecs.abi.parser import Parser
+from eth.codecs.utils import checksum_encode
 
 
 class StrategyMaker:
@@ -27,7 +28,7 @@ class StrategyMaker:
         # encoding an address, converts it to an int, decoding does the reverse
         # since 0xAF and 0xaf are the same value in hex, this is fine, however,
         # when comparing strings they are not the same.
-        return st.from_regex(r"0x[a-f0-9]{40}", fullmatch=True)
+        return st.builds(checksum_encode, st.from_regex(r"0x[a-f0-9]{40}", fullmatch=True))
 
     @classmethod
     def visit_ArrayNode(cls, node: nodes.ArrayNode) -> st.SearchStrategy:
