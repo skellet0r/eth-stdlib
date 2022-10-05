@@ -51,6 +51,10 @@ def decode(schema: str, value: bytes, **kwargs) -> Any:
     Parameters:
         schema: An ABI type string.
         value: The value to decode.
+        **kwargs: Additional keyword arguments to pass on to ABI type decoder functions.
+
+    Keyword Arguments:
+        checksum (bool): Whether to checksum encode decoded address values.
 
     Example:
 
