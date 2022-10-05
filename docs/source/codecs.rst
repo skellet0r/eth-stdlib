@@ -8,3 +8,11 @@ For a definitive reference to the Ethereum contract ABIv2 specification, `visit 
 
 .. automodule:: eth.codecs.abi
    :members:
+
+Utilities
+---------
+
+Additional encoders and decoders not namespaced under ``eth.codecs``.
+
+.. automodule:: eth.codecs.utils
+   :members:

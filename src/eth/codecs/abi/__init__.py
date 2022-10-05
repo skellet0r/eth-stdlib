@@ -54,7 +54,7 @@ def decode(schema: str, value: bytes, **kwargs) -> Any:
         **kwargs: Additional keyword arguments to pass on to ABI type decoder functions.
 
     Keyword Arguments:
-        checksum (bool): Whether to checksum encode decoded address values.
+        checksum (bool): Whether to checksum encode decoded address values, defaults to ``True``.
 
     Example:
 
