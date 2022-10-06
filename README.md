@@ -6,7 +6,7 @@
 [![Read the Docs](https://img.shields.io/readthedocs/eth-stdlib)](https://eth-stdlib.readthedocs.io/en/latest/)
 [![PyPI](https://img.shields.io/pypi/v/eth-stdlib)](https://pypi.org/project/eth-stdlib/)
 
-A collection of pure python libraries for developers building on the EVM.
+The Ethereum Standard Library is a collection of libraries for developers building on the EVM.
 
 ## Installation
 
