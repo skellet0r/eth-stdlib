@@ -47,6 +47,7 @@ Indices and tables
    :maxdepth: 2
 
    codecs
+   hash
 
 * :ref:`genindex`
 * :ref:`modindex`
