@@ -12,7 +12,7 @@ For a definitive reference to the Ethereum contract ABIv2 specification, `visit 
 Utilities
 ---------
 
-Additional encoders and decoders not namespaced under ``eth.codecs``.
+Additional encoder and decoder functions.
 
 .. automodule:: eth.codecs.utils
    :members:
