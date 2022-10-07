@@ -6,7 +6,7 @@
 Welcome to eth-stdlib's documentation!
 ======================================
 
-The Ethereum Standard Library is a collection of pure python libraries for developers building on the EVM.
+The Ethereum Standard Library is a collection of libraries for developers building on the EVM.
 The intention is to have a single repository of data structures and utilities which is easy to grok and just as
 easy to install as a dependency.
 
