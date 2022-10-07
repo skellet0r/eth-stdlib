@@ -104,7 +104,7 @@ class Encoder:
             EncodeError: If the value can't be encoded.
         """
         try:
-            assert isinstance(value, list), "Value is not a list type"
+            assert isinstance(value, list), "Value is not an instance of type 'list'"
             if node.length is not None:
                 assert len(value) == node.length, f"Expected value of size {node.length}"
         except AssertionError as e:
@@ -293,7 +293,7 @@ class Encoder:
         """
         try:
             # validate value is a list or tuple of appropriate size
-            assert isinstance(value, tuple), "Value is not a tuple type"
+            assert isinstance(value, tuple), "Value is not an instance of type 'tuple'"
             assert len(node.ctypes) == len(value), f"Expected value of size {len(node.ctypes)}"
         except AssertionError as e:
             raise EncodeError(str(node), value, e.args[0])
