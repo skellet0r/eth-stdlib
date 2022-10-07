@@ -1,6 +1,6 @@
 import string
 
-from sha3 import keccak_256 as keccak256
+from eth.hash import keccak256
 
 
 def checksum_encode(addr: str | bytes) -> str:
@@ -33,7 +33,7 @@ def checksum_encode(addr: str | bytes) -> str:
         raise ValueError("Invalid hexadecimal characters")
 
     buffer = ""
-    digest = keccak256(hexval.encode()).hexdigest()
+    digest = keccak256(hexval.encode()).hex()
     for char, nibble in zip(hexval, digest):
         buffer += char.upper() if int(nibble, 16) > 7 else char
 
