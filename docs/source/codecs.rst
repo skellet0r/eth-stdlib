@@ -1,4 +1,4 @@
-Codecs - Encoders and Decoders
+Encoders and Decoders
 ==============================
 
 Ethereum Contract ABIv2

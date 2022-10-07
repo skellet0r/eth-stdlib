@@ -1,4 +1,4 @@
-Hash - Hash functions
+Hash Functions
 =====================
 
 .. automodule:: eth.hash
