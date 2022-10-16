@@ -12,6 +12,10 @@ from eth.codecs.abi.exceptions import EncodeError
 from tests.strategies.abi.values import strategy, typestr_and_value
 
 
+def test_encode_empty_tuple():
+    assert encode("()", ()) == b""
+
+
 @given(strategy("address"))
 def test_encode_address(value):
     assert encode("address", value) == int(value, 16).to_bytes(32, "big")
