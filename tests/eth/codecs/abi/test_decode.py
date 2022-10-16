@@ -19,6 +19,7 @@ from tests.strategies.abi.values import typestr_and_value
 @example(("string[]", [""]))
 @example(("ufixed128x10", decimal.Decimal("1.2")))
 @example(("int128", -1))
+@example(("()", ()))
 def test_decoding(value):
     typestr, val = value
 

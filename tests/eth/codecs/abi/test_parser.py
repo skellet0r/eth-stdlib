@@ -2,6 +2,7 @@ import hypothesis.strategies as st
 import pytest
 from hypothesis import assume, given
 
+from eth.codecs.abi import nodes
 from eth.codecs.abi.exceptions import ParseError
 from eth.codecs.abi.parser import Parser
 from tests.strategies.abi.nodes import Node
@@ -11,6 +12,10 @@ from tests.strategies.abi.nodes import Node
 def test_parser(node):
     # generate a random valid abi type node format as typestr and then parse it
     assert Parser.parse(str(node)) == node
+
+
+def test_parse_empty_tuple():
+    assert Parser.parse("()") == nodes.TupleNode(())
 
 
 @pytest.mark.parametrize("typestr", ["bytes1233", "bytes592309", "bytes8193"])
@@ -54,3 +59,13 @@ def test_parse_invalid_typestr_raises(typestr):
 
     with pytest.raises(ParseError, match="ABI type not parseable"):
         Parser.parse(typestr)
+
+
+def test_parse_empty_tuple_as_a_component_raises():
+    with pytest.raises(ParseError, match=r"Empty tuples are disallowed as components"):
+        Parser.parse("(uint256,())")
+
+
+def test_parse_empty_tuple_as_an_element_raises():
+    with pytest.raises(ParseError, match=r"'\(\)' is not a valid array element type"):
+        Parser.parse("()[]")
