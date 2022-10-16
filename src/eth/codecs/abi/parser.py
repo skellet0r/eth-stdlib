@@ -62,6 +62,8 @@ class Parser:
                 return nodes.BytesNode()
             case "string":
                 return nodes.StringNode()
+            case "()":
+                return nodes.TupleNode(())
 
         # using fullmatch method to correctly match against the entire string
         if (mo := cls.VALUE_PATTERN.fullmatch(schema)) is not None:
@@ -86,11 +88,12 @@ class Parser:
 
         # array
         elif (mo := cls.ARRAY_PATTERN.fullmatch(schema)) is not None:
-            etype, asize = mo[1], int(mo[2]) if mo[2] else None
+            etype, asize = cls.parse(mo[1]), int(mo[2]) if mo[2] else None
             if asize == 0:
                 raise ParseError(schema, "'0' is not a valid array size")
-            # recurse and parse the element type of the array
-            return nodes.ArrayNode(cls.parse(etype), asize)
+            elif isinstance(etype, nodes.TupleNode) and len(etype.ctypes) == 0:
+                raise ParseError(schema, "'()' is not a valid array element type")
+            return nodes.ArrayNode(etype, asize)
 
         # tuple
         elif cls.TUPLE_PATTERN.fullmatch(schema) is not None:
@@ -114,8 +117,12 @@ class Parser:
             if "" in components:
                 raise ParseError(schema, "Dangling comma detected in type string")
 
+            ctypes = tuple((cls.parse(component) for component in components))
+            if any((isinstance(typ, nodes.TupleNode) and len(typ.ctypes) == 0 for typ in ctypes)):
+                raise ParseError(schema, "Empty tuples are disallowed as components")
+
             # recurse and parse components
-            return nodes.TupleNode(tuple((cls.parse(component) for component in components)))
+            return nodes.TupleNode(ctypes)
 
         # none of the above matching was successful, raise since we can't parse `schema`
         raise ParseError(schema, "ABI type not parseable")
