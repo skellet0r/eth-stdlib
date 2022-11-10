@@ -160,7 +160,7 @@ def test_encoding_invalid_address_value_raises():
 
 
 def test_encoding_invalid_array_value_raises():
-    with pytest.raises(EncodeError, match="Value is not an instance of type 'list'"):
+    with pytest.raises(EncodeError, match="Value is not an instance of type 'list' or 'tuple'"):
         encode("uint256[]", {})
 
     with pytest.raises(EncodeError, match="Expected value of size 3"):
@@ -205,7 +205,7 @@ def test_encoding_invalid_string_value_raises():
 
 
 def test_encoding_invalid_tuple_value_raises():
-    with pytest.raises(EncodeError, match="Value is not an instance of type 'tuple'"):
+    with pytest.raises(EncodeError, match="Value is not an instance of type 'list' or 'tuple'"):
         encode("(string)", set(["", "Hello"]))
 
     with pytest.raises(EncodeError, match="Expected value of size 1"):
