@@ -67,23 +67,20 @@ class Parser:
         # using fullmatch method to correctly match against the entire string
         if (mo := cls.VALUE_PATTERN.fullmatch(schema)) is not None:
             # identify which type was matched, and validate it
-            match mo.lastindex:
-                case 1:  # bytes
-                    if (size := int(mo[1])) not in range(1, 33):
-                        raise ParseError(schema, f"'{size}' is not a valid byte array width")
-                    return nodes.BytesNode(size)
-                case 3:  # fixed
-                    if (size := int(mo[2])) not in range(8, 264, 8):
-                        raise ParseError(schema, f"'{size}' is not a valid fixed point width")
-                    elif (precision := int(mo[3])) not in range(81):
-                        raise ParseError(
-                            schema, f"'{precision}' is not a valid fixed point precision"
-                        )
-                    return nodes.FixedNode(size, precision, schema[0] != "u")
-                case _:  # integer
-                    if (size := int(mo[4])) not in range(8, 264, 8):
-                        raise ParseError(schema, f"'{size}' is not a valid integer width")
-                    return nodes.IntegerNode(size, schema[0] != "u")
+            if mo.lastindex == 1:  # bytes
+                if (size := int(mo[1])) not in range(1, 33):
+                    raise ParseError(schema, f"'{size}' is not a valid byte array width")
+                return nodes.BytesNode(size)
+            elif mo.lastindex == 3:  # fixed
+                if (size := int(mo[2])) not in range(8, 264, 8):
+                    raise ParseError(schema, f"'{size}' is not a valid fixed point width")
+                elif (precision := int(mo[3])) not in range(81):
+                    raise ParseError(schema, f"'{precision}' is not a valid fixed point precision")
+                return nodes.FixedNode(size, precision, schema[0] != "u")
+            else:  # integer
+                if (size := int(mo[4])) not in range(8, 264, 8):
+                    raise ParseError(schema, f"'{size}' is not a valid integer width")
+                return nodes.IntegerNode(size, schema[0] != "u")
 
         # array
         elif (mo := cls.ARRAY_PATTERN.fullmatch(schema)) is not None:
