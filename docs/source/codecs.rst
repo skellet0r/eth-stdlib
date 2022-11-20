@@ -42,10 +42,13 @@ Hypothesis Strategies
       >>> st_value("(uint256,uint8,address[2])").example()
       (163, 227, ['0x67BeeB3dCFa0498B362315501258878eCbE5DeC9', '0x67BeeB3dCFa0498B362315501258878eCbE5DeC9'])
 
-.. py:function:: schema_and_value() -> hypothesis.strategies.SearchStrategy[tuple[str, Any]]
+.. py:function:: schema_and_value(st_type: hypothesis.strategies.SearchStrategy | None) -> hypothesis.strategies.SearchStrategy[tuple[str, Any]]
 
    Generate a valid ABIv2 type schema and an encodable value for it.
 
+   If the ``st_type`` parameter is supplied, schemas will be generated using the supplied search strategy.
+
+   :param hypothesis.strategies.SearchStrategy st_type: A search strategy which generates :py:class:`eth.codecs.abi.nodes.ABITypeNode`
    :returns: A tuple containing a valid ABIv2 type schema and a valid encodable value.
 
    .. rubric:: Example
@@ -55,6 +58,9 @@ Hypothesis Strategies
       >>> from eth.codecs.abi.strategies import schema_and_value as st_schema_and_value
       >>> st_schema_and_value().example()
       ('bool[2][]', [[False, True], [False, False], [False, False], [False, True], [True, False], [True, False]])
+      >>> from eth.codecs.abi.strategies.nodes import Fixed as st_fixed
+      >>> st_schema_and_value(st_fixed).example()
+      ('fixed96x75', Decimal('-1.6503499995656503835410387807E-47'))
 
 Utilities
 ---------
