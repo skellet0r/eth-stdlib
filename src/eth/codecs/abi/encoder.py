@@ -16,7 +16,7 @@
 
 import decimal
 from itertools import accumulate
-from typing import Any
+from typing import Any, Union
 
 from eth.codecs.abi import nodes
 from eth.codecs.abi.exceptions import EncodeError
@@ -77,7 +77,7 @@ class Encoder:
             raise EncodeError("address", value, "Value is not 20 bytes")
 
     @classmethod
-    def visit_ArrayNode(cls, node: nodes.ArrayNode, value: list | tuple) -> bytes:
+    def visit_ArrayNode(cls, node: nodes.ArrayNode, value: Union[list, tuple]) -> bytes:
         """Encode an array.
 
         There are 4 possible cases when encoding an array:
@@ -272,7 +272,7 @@ class Encoder:
             raise EncodeError("string", value, "Value is not an instance of type 'str'")
 
     @classmethod
-    def visit_TupleNode(cls, node: nodes.TupleNode, value: list | tuple) -> bytes:
+    def visit_TupleNode(cls, node: nodes.TupleNode, value: Union[list, tuple]) -> bytes:
         """Encode a tuple.
 
         There are 2 possible cases when encoding a tuple:

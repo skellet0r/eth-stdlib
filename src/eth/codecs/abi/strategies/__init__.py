@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, Optional
 
 import hypothesis.strategies as st
 
@@ -23,7 +23,9 @@ def value(draw: st.DrawFn, schema: str) -> Any:
 
 
 @st.composite
-def schema_and_value(draw: st.DrawFn, st_type: st.SearchStrategy | None = None) -> tuple[str, Any]:
+def schema_and_value(
+    draw: st.DrawFn, st_type: Optional[st.SearchStrategy] = None
+) -> tuple[str, Any]:
     """Generate a valid ABI schema and an encodable value for it.
 
     Parameters:

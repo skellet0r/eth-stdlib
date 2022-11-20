@@ -1,9 +1,10 @@
 import string
+from typing import Union
 
 from eth.hash import keccak256
 
 
-def checksum_encode(addr: str | bytes) -> str:
+def checksum_encode(addr: Union[str, bytes]) -> str:
     """Checksum encode an address.
 
     See `EIP-55 <https://eips.ethereum.org/EIPS/eip-55>`_.

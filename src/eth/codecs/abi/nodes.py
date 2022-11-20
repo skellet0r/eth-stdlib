@@ -17,7 +17,7 @@
 import decimal
 import functools
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Any, Optional
 
 
 @dataclass(init=False, frozen=True)
@@ -66,7 +66,7 @@ class ArrayNode(ABITypeNode):
     """
 
     etype: ABITypeNode
-    length: int | None = None
+    length: Optional[int] = None
 
     def __post_init__(self):
         if self.etype.is_dynamic or self.length is None:
@@ -100,7 +100,7 @@ class BytesNode(ABITypeNode):
             width.
     """
 
-    size: int | None = None
+    size: Optional[int] = None
 
     def __post_init__(self):
         object.__setattr__(self, "is_dynamic", self.size is None)
