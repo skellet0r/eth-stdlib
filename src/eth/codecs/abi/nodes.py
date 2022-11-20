@@ -17,7 +17,7 @@
 import decimal
 import functools
 from dataclasses import dataclass, field
-from typing import Any, Optional
+from typing import Any, Optional, Tuple
 
 
 @dataclass(init=False, frozen=True)
@@ -127,7 +127,7 @@ class IntegerNode(ABITypeNode):
     is_signed: bool = False
 
     @property
-    def bounds(self) -> tuple[int, int]:
+    def bounds(self) -> Tuple[int, int]:
         """Get the lower and upper integer bounds of the type.
 
         Returns:
@@ -137,7 +137,7 @@ class IntegerNode(ABITypeNode):
 
     @staticmethod
     @functools.cache
-    def _calculate_bounds(bits: int, is_signed: bool = False) -> tuple[int, int]:
+    def _calculate_bounds(bits: int, is_signed: bool = False) -> Tuple[int, int]:
         """Calculate integer bounds.
 
         Parameters:
@@ -178,7 +178,7 @@ class FixedNode(ABITypeNode):
     is_signed: bool = False
 
     @property
-    def bounds(self) -> tuple[decimal.Decimal, decimal.Decimal]:
+    def bounds(self) -> Tuple[decimal.Decimal, decimal.Decimal]:
         """Get the lower and upper fixed point decimal bounds of the type.
 
         Returns:
@@ -190,7 +190,7 @@ class FixedNode(ABITypeNode):
     @functools.cache
     def _calculate_bounds(
         bits: int, precision: int, is_signed: bool = False
-    ) -> tuple[decimal.Decimal, decimal.Decimal]:
+    ) -> Tuple[decimal.Decimal, decimal.Decimal]:
         """Calculate fixed point decimal bounds.
 
         Parameters:
@@ -231,7 +231,7 @@ class TupleNode(ABITypeNode):
         ctypes: The component types of the tuple.
     """
 
-    ctypes: tuple[ABITypeNode, ...]
+    ctypes: Tuple[ABITypeNode, ...]
 
     def __post_init__(self):
         if any((typ.is_dynamic for typ in self.ctypes)):
