@@ -3,15 +3,14 @@ import decimal
 import pytest
 from hypothesis import example, given
 
-import tests.strategies.abi.nodes as st_nodes
 from eth.codecs.abi import decode, encode
 from eth.codecs.abi.decoder import Decoder
 from eth.codecs.abi.exceptions import DecodeError
 from eth.codecs.abi.nodes import IntegerNode
-from tests.strategies.abi.values import typestr_and_value
+from eth.codecs.abi.strategies import schema_and_value as st_schema_and_value
 
 
-@given(typestr_and_value(st_nodes.Node))
+@given(st_schema_and_value())
 @example(("((uint256,uint256))", ((1, 1),)))
 @example(("((string,string))", (("", ""),)))
 @example(("(uint256[3])", ([1, 2, 3],)))
