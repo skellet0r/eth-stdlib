@@ -5,18 +5,19 @@ import hypothesis.strategies as st
 import pytest
 from hypothesis import given
 
-import tests.strategies.abi.nodes as st_nodes
+import eth.codecs.abi.strategies.nodes as st_nodes
 from eth.codecs.abi import encode, nodes
 from eth.codecs.abi.encoder import Encoder
 from eth.codecs.abi.exceptions import EncodeError
-from tests.strategies.abi.values import strategy, typestr_and_value
+from eth.codecs.abi.strategies import schema_and_value as st_schema_and_value
+from eth.codecs.abi.strategies import value as st_value
 
 
 def test_encode_empty_tuple():
     assert encode("()", ()) == b""
 
 
-@given(strategy("address"))
+@given(st_value("address"))
 def test_encode_address(value):
     assert encode("address", value) == int(value, 16).to_bytes(32, "big")
 
@@ -26,14 +27,14 @@ def test_encode_bool(value):
     assert encode("bool", value) == value.to_bytes(32, "big")
 
 
-@given(strategy("bytes"))
+@given(st_value("bytes"))
 def test_encode_bytes(value):
     output = encode("bytes", value)
 
     assert output == len(value).to_bytes(32, "big") + value
 
 
-@given(strategy("string"))
+@given(st_value("string"))
 def test_encode_string(value):
     output = encode("string", value)
 
@@ -42,13 +43,13 @@ def test_encode_string(value):
     assert output == len(value).to_bytes(32, "big") + value
 
 
-@given(typestr_and_value(st.builds(nodes.BytesNode, st.integers(1, 32))))
+@given(st_schema_and_value(st.builds(nodes.BytesNode, st.integers(1, 32))))
 def test_encode_static_bytes(value):
     typestr, val = value
     assert encode(typestr, val) == val.ljust(32, b"\x00")
 
 
-@given(typestr_and_value(st_nodes.Fixed))
+@given(st_schema_and_value(st_nodes.Fixed))
 def test_encode_fixed_point(value):
     typestr, val = value
     output = encode(typestr, val)
@@ -59,7 +60,7 @@ def test_encode_fixed_point(value):
     assert output == scaled_val.to_bytes(32, "big", signed=not typestr[0] == "u")
 
 
-@given(typestr_and_value(st_nodes.Integer))
+@given(st_schema_and_value(st_nodes.Integer))
 def test_encode_integer(value):
     typestr, val = value
     output = encode(typestr, val)
@@ -67,7 +68,7 @@ def test_encode_integer(value):
     assert output == val.to_bytes(32, "big", signed=not typestr[0] == "u")
 
 
-@given(typestr_and_value(st_nodes.S_Tuple))
+@given(st_schema_and_value(st_nodes.S_Tuple))
 def test_encode_static_tuple(value):
     typestr, val = value
     output = encode(typestr, val)
@@ -76,7 +77,7 @@ def test_encode_static_tuple(value):
     assert output == b"".join([encode(typ, v) for typ, v in zip(typs, val)])
 
 
-@given(typestr_and_value(st_nodes.D_Tuple))
+@given(st_schema_and_value(st_nodes.D_Tuple))
 def test_encode_dynamic_tuple(value):
     typestr, val = value
     output = encode(typestr, val)
@@ -92,7 +93,7 @@ def test_encode_dynamic_tuple(value):
     assert output == head + b"".join(tail)
 
 
-@given(typestr_and_value(st_nodes.SS_Array))
+@given(st_schema_and_value(st_nodes.SS_Array))
 def test_encode_static_array(value):
     typestr, val = value
     output = encode(typestr, val)
@@ -102,7 +103,7 @@ def test_encode_static_array(value):
     assert output == b"".join([encode(subtype, v) for v in val])
 
 
-@given(typestr_and_value(st_nodes.DS_Array))
+@given(st_schema_and_value(st_nodes.DS_Array))
 def test_encode_dynamic_array(value):
     typestr, val = value
     output = encode(typestr, val)
@@ -113,7 +114,7 @@ def test_encode_dynamic_array(value):
     assert output == expected
 
 
-@given(typestr_and_value(st_nodes.SD_Array))
+@given(st_schema_and_value(st_nodes.SD_Array))
 def test_encode_static_with_dynamic_elements_array(value):
     typestr, val = value
     output = encode(typestr, val)
@@ -128,7 +129,7 @@ def test_encode_static_with_dynamic_elements_array(value):
     assert output == head + b"".join(tail)
 
 
-@given(typestr_and_value(st_nodes.DD_Array))
+@given(st_schema_and_value(st_nodes.DD_Array))
 def test_encode_dynamic_with_dynamic_elements_array(value):
     typestr, val = value
     output = encode(typestr, val)
