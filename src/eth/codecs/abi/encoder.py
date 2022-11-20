@@ -63,7 +63,7 @@ class Encoder:
             EncodeError: If the value can't be encoded.
         """
         try:
-            if value[:2] in ("0x", "0X"):
+            if value[:2] in ("0x", "0X"):  # pragma: no branch
                 value = value[2:]
             bval = bytes.fromhex(value)
             assert len(bval) == 20
