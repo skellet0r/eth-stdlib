@@ -37,6 +37,14 @@ class Parser:
     TUPLE_PATTERN = re.compile(r"\(.+\)")
     VALUE_PATTERN = re.compile(r"bytes(\d+)|u?(?:fixed(\d+)x(\d+)|int(\d+))")
 
+    SIMPLE_CASES = {
+        "address": nodes.AddressNode(),
+        "bool": nodes.BooleanNode(),
+        "bytes": nodes.BytesNode(),
+        "string": nodes.StringNode(),
+        "()": nodes.TupleNode(()),
+    }
+
     @classmethod
     def parse(cls, schema: str) -> nodes.ABITypeNode:
         """Parse an ABI schema into a AST.
@@ -53,17 +61,8 @@ class Parser:
             ParseError: If ``schema`` contains an invalid ABI type.
         """
         # simplest types to match against since they don't require regex
-        match schema:
-            case "address":
-                return nodes.AddressNode()
-            case "bool":
-                return nodes.BooleanNode()
-            case "bytes":
-                return nodes.BytesNode()
-            case "string":
-                return nodes.StringNode()
-            case "()":
-                return nodes.TupleNode(())
+        if schema in cls.SIMPLE_CASES:
+            return cls.SIMPLE_CASES[schema]
 
         # using fullmatch method to correctly match against the entire string
         if (mo := cls.VALUE_PATTERN.fullmatch(schema)) is not None:
