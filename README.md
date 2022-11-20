@@ -50,7 +50,7 @@ Afterwards the development environment will be complete.
 
 ### Testing
 
-To run the test suite, execute the following command:available in the `html
+To run the test suite, execute the following command:
 
 ```bash
 $ poetry run pytest
