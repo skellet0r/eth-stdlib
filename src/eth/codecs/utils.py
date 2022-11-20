@@ -22,7 +22,9 @@ def checksum_encode(addr: Union[str, bytes]) -> str:
     if isinstance(addr, bytes):
         hexval = addr.hex()
     elif isinstance(addr, str):
-        hexval = addr.lower().removeprefix("0x")
+        if addr[:2] in ("0x", "0X"):
+            addr = addr[2:]
+        hexval = addr.lower()
     else:
         raise TypeError(
             f"Invalid argument type, expected 'str' or 'bytes' got: {type(addr).__qualname__}"

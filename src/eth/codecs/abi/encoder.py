@@ -63,7 +63,9 @@ class Encoder:
             EncodeError: If the value can't be encoded.
         """
         try:
-            bval = bytes.fromhex(value.removeprefix("0x"))
+            if value[:2] in ("0x", "0X"):
+                value = value[2:]
+            bval = bytes.fromhex(value)
             assert len(bval) == 20
             return bval.rjust(32, b"\x00")
         except (AttributeError, TypeError):
