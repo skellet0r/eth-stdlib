@@ -136,7 +136,7 @@ class IntegerNode(ABITypeNode):
         return self._calculate_bounds(self.bits, self.is_signed)
 
     @staticmethod
-    @functools.cache
+    @functools.lru_cache(maxsize=None)
     def _calculate_bounds(bits: int, is_signed: bool = False) -> Tuple[int, int]:
         """Calculate integer bounds.
 
@@ -187,7 +187,7 @@ class FixedNode(ABITypeNode):
         return self._calculate_bounds(self.bits, self.precision, self.is_signed)
 
     @staticmethod
-    @functools.cache
+    @functools.lru_cache(maxsize=None)
     def _calculate_bounds(
         bits: int, precision: int, is_signed: bool = False
     ) -> Tuple[decimal.Decimal, decimal.Decimal]:

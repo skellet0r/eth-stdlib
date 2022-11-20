@@ -10,7 +10,7 @@ class StrategyMaker:
     """ABI value strategy maker."""
 
     @classmethod
-    @functools.cache
+    @functools.lru_cache(maxsize=None)
     def make_strategy(cls, node: nodes.ABITypeNode) -> st.SearchStrategy:
         """Create a hypothesis search strategy for a given ABI type.
 
