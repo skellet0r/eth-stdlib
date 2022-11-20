@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "eth-stdlib"
-version = "0.2.3"
+version = "0.2.4"
 description = "Ethereum Standard Library for Python"
 authors = ["Edward Amor <edward.amor3@gmail.com>"]
 license = "LGPL-3.0-only"
