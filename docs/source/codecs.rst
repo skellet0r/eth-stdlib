@@ -27,7 +27,7 @@ Hypothesis Strategies
       >>> st_schema.example()
       '(bytes18,uint168,bool,int240[])[3]'
 
-.. py:function:: value(schema: str) -> Any
+.. py:function:: value(schema: str) -> hypothesis.strategies.SearchStrategy[Any]
 
    Generate a valid ABIv2 encodable value for a given type schema.
 
@@ -41,6 +41,20 @@ Hypothesis Strategies
       >>> from eth.codecs.abi.strategies import value as st_value
       >>> st_value("(uint256,uint8,address[2])").example()
       (163, 227, ['0x67BeeB3dCFa0498B362315501258878eCbE5DeC9', '0x67BeeB3dCFa0498B362315501258878eCbE5DeC9'])
+
+.. py:function:: schema_and_value() -> hypothesis.strategies.SearchStrategy[tuple[str, Any]]
+
+   Generate a valid ABIv2 type schema and an encodable value for it.
+
+   :returns: A tuple containing a valid ABIv2 type schema and a valid encodable value.
+
+   .. rubric:: Example
+
+   .. code-block:: python
+
+      >>> from eth.codecs.abi.strategies import schema_and_value as st_schema_and_value
+      >>> st_schema_and_value().example()
+      ('bool[2][]', [[False, True], [False, False], [False, False], [False, True], [True, False], [True, False]])
 
 Utilities
 ---------
