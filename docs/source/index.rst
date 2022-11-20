@@ -27,6 +27,12 @@ Installing via poetry:
 
    $ poetry add eth-stdlib
 
+Optionally, the ``hypothesis`` extras can be installed to gain access to built-in testing strategies:
+
+.. code-block:: bash
+
+   $ pip install eth-stdlib[hypothesis]
+
 Usage
 -----
 
