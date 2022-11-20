@@ -97,15 +97,14 @@ class Parser:
             components, compstr = [], schema[1:-1]
             depth, lastpos = 0, 0  # keep track of nested tuples
             for mo in re.finditer(r"\(|\)|,", compstr):
-                match mo[0]:
-                    case "(":  # tuple start
-                        depth += 1
-                    case ")":  # tuple end
-                        depth -= 1
-                    case _ if depth == 0:  # component separator
-                        # append the component substring from lastpos up to the comma
-                        components.append(compstr[lastpos : mo.start()])
-                        lastpos = mo.end()  # set lastpos after the comma
+                if mo[0] == "(":  # tuple start
+                    depth += 1
+                elif mo[0] == ")":  # tuple end
+                    depth -= 1
+                elif depth == 0:  # component separator
+                    # append the component substring from lastpos up to the comma
+                    components.append(compstr[lastpos : mo.start()])
+                    lastpos = mo.end()  # set lastpos after the comma
 
             # append the remaining component after the last comma
             components.append(compstr[lastpos:])
