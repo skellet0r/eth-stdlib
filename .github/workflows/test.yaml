@@ -4,6 +4,9 @@ on: [pull_request, push]
 
 jobs:
   main:
+    strategy:
+      matrix:
+        python-version: ['3.10', '3.11']
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -13,7 +16,7 @@ jobs:
           pipx install poetry
       - uses: actions/setup-python@v4
         with:
-          python-version: '3.10'
+          python-version: ${{ matrix.python-version }}
           cache: 'poetry'
       - run: poetry install --sync
       - run: poetry run pytest --cov-report xml
