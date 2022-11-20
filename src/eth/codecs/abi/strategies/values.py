@@ -3,7 +3,6 @@ import functools
 import hypothesis.strategies as st
 
 from eth.codecs.abi import nodes
-from eth.codecs.abi.parser import Parser
 from eth.codecs.utils import checksum_encode
 
 
@@ -62,25 +61,3 @@ class StrategyMaker:
     def visit_TupleNode(cls, node: nodes.TupleNode) -> st.SearchStrategy:
         inner_strategies = [cls.make_strategy(ctyp) for ctyp in node.ctypes]
         return st.tuples(*inner_strategies)
-
-
-@st.composite
-def strategy(draw: st.DrawFn, typestr: str | st.SearchStrategy):
-    """Generate a valid ABI encodable value for a given type string.
-
-    Parameters:
-        typestr: A valid ABI type string, or an ABI node strategy.
-
-    Returns:
-        A valid ABI encodable value for the given type string.
-    """
-    if isinstance(typestr, str):
-        # user provided typestr
-        return draw(StrategyMaker.make_strategy(Parser.parse(typestr)))
-    return draw(StrategyMaker.make_strategy(draw(typestr)))
-
-
-@st.composite
-def typestr_and_value(draw: st.DrawFn, st_node: st.SearchStrategy):
-    node = draw(st_node)
-    return str(node), draw(StrategyMaker.make_strategy(node))
