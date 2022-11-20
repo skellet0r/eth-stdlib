@@ -14,7 +14,7 @@ release = "0.2.3"
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
-extensions = ["sphinx.ext.autodoc", "sphinx.ext.napoleon"]
+extensions = ["sphinx.ext.autodoc", "sphinx.ext.intersphinx", "sphinx.ext.napoleon"]
 
 templates_path = ["_templates"]
 exclude_patterns = []
@@ -30,3 +30,8 @@ html_static_path = ["_static"]
 # https://www.sphinx-doc.org/en/master/usage/extensions/autodoc.html#configuration
 
 autodoc_member_order = "bysource"
+
+# -- intersphinx extension configuration ---------------------------------------------------
+# https://www.sphinx-doc.org/en/master/usage/extensions/intersphinx.html
+
+intersphinx_mapping = {"hypothesis": ("https://hypothesis.readthedocs.io/en/latest", None)}
