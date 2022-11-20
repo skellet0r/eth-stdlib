@@ -104,7 +104,7 @@ class Decoder:
         return f"0x{value[-20:].hex()}"
 
     @classmethod
-    def visit_ArrayNode(cls, node: nodes.ArrayNode, value: bytes, **kwargs: Any) -> list[Any]:
+    def visit_ArrayNode(cls, node: nodes.ArrayNode, value: bytes, **kwargs: Any) -> list:
         """Decode an array.
 
         Parameters:

@@ -17,7 +17,7 @@
 import decimal
 import functools
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Any, Optional, Tuple
 
 
 @dataclass(init=False, frozen=True)
@@ -66,7 +66,7 @@ class ArrayNode(ABITypeNode):
     """
 
     etype: ABITypeNode
-    length: int | None = None
+    length: Optional[int] = None
 
     def __post_init__(self):
         if self.etype.is_dynamic or self.length is None:
@@ -100,7 +100,7 @@ class BytesNode(ABITypeNode):
             width.
     """
 
-    size: int | None = None
+    size: Optional[int] = None
 
     def __post_init__(self):
         object.__setattr__(self, "is_dynamic", self.size is None)
@@ -127,7 +127,7 @@ class IntegerNode(ABITypeNode):
     is_signed: bool = False
 
     @property
-    def bounds(self) -> tuple[int, int]:
+    def bounds(self) -> Tuple[int, int]:
         """Get the lower and upper integer bounds of the type.
 
         Returns:
@@ -136,8 +136,8 @@ class IntegerNode(ABITypeNode):
         return self._calculate_bounds(self.bits, self.is_signed)
 
     @staticmethod
-    @functools.cache
-    def _calculate_bounds(bits: int, is_signed: bool = False) -> tuple[int, int]:
+    @functools.lru_cache(maxsize=None)
+    def _calculate_bounds(bits: int, is_signed: bool = False) -> Tuple[int, int]:
         """Calculate integer bounds.
 
         Parameters:
@@ -178,7 +178,7 @@ class FixedNode(ABITypeNode):
     is_signed: bool = False
 
     @property
-    def bounds(self) -> tuple[decimal.Decimal, decimal.Decimal]:
+    def bounds(self) -> Tuple[decimal.Decimal, decimal.Decimal]:
         """Get the lower and upper fixed point decimal bounds of the type.
 
         Returns:
@@ -187,10 +187,10 @@ class FixedNode(ABITypeNode):
         return self._calculate_bounds(self.bits, self.precision, self.is_signed)
 
     @staticmethod
-    @functools.cache
+    @functools.lru_cache(maxsize=None)
     def _calculate_bounds(
         bits: int, precision: int, is_signed: bool = False
-    ) -> tuple[decimal.Decimal, decimal.Decimal]:
+    ) -> Tuple[decimal.Decimal, decimal.Decimal]:
         """Calculate fixed point decimal bounds.
 
         Parameters:
@@ -231,7 +231,7 @@ class TupleNode(ABITypeNode):
         ctypes: The component types of the tuple.
     """
 
-    ctypes: tuple[ABITypeNode, ...]
+    ctypes: Tuple[ABITypeNode, ...]
 
     def __post_init__(self):
         if any((typ.is_dynamic for typ in self.ctypes)):

@@ -1,9 +1,10 @@
 import string
+from typing import Union
 
 from eth.hash import keccak256
 
 
-def checksum_encode(addr: str | bytes) -> str:
+def checksum_encode(addr: Union[str, bytes]) -> str:
     """Checksum encode an address.
 
     See `EIP-55 <https://eips.ethereum.org/EIPS/eip-55>`_.
@@ -21,7 +22,9 @@ def checksum_encode(addr: str | bytes) -> str:
     if isinstance(addr, bytes):
         hexval = addr.hex()
     elif isinstance(addr, str):
-        hexval = addr.lower().removeprefix("0x")
+        if addr[:2] in ("0x", "0X"):  # pragma: no branch
+            addr = addr[2:]
+        hexval = addr.lower()
     else:
         raise TypeError(
             f"Invalid argument type, expected 'str' or 'bytes' got: {type(addr).__qualname__}"

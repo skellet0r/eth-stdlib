@@ -37,6 +37,14 @@ class Parser:
     TUPLE_PATTERN = re.compile(r"\(.+\)")
     VALUE_PATTERN = re.compile(r"bytes(\d+)|u?(?:fixed(\d+)x(\d+)|int(\d+))")
 
+    SIMPLE_CASES = {
+        "address": nodes.AddressNode(),
+        "bool": nodes.BooleanNode(),
+        "bytes": nodes.BytesNode(),
+        "string": nodes.StringNode(),
+        "()": nodes.TupleNode(()),
+    }
+
     @classmethod
     def parse(cls, schema: str) -> nodes.ABITypeNode:
         """Parse an ABI schema into a AST.
@@ -53,38 +61,26 @@ class Parser:
             ParseError: If ``schema`` contains an invalid ABI type.
         """
         # simplest types to match against since they don't require regex
-        match schema:
-            case "address":
-                return nodes.AddressNode()
-            case "bool":
-                return nodes.BooleanNode()
-            case "bytes":
-                return nodes.BytesNode()
-            case "string":
-                return nodes.StringNode()
-            case "()":
-                return nodes.TupleNode(())
+        if schema in cls.SIMPLE_CASES:
+            return cls.SIMPLE_CASES[schema]
 
         # using fullmatch method to correctly match against the entire string
         if (mo := cls.VALUE_PATTERN.fullmatch(schema)) is not None:
             # identify which type was matched, and validate it
-            match mo.lastindex:
-                case 1:  # bytes
-                    if (size := int(mo[1])) not in range(1, 33):
-                        raise ParseError(schema, f"'{size}' is not a valid byte array width")
-                    return nodes.BytesNode(size)
-                case 3:  # fixed
-                    if (size := int(mo[2])) not in range(8, 264, 8):
-                        raise ParseError(schema, f"'{size}' is not a valid fixed point width")
-                    elif (precision := int(mo[3])) not in range(81):
-                        raise ParseError(
-                            schema, f"'{precision}' is not a valid fixed point precision"
-                        )
-                    return nodes.FixedNode(size, precision, schema[0] != "u")
-                case _:  # integer
-                    if (size := int(mo[4])) not in range(8, 264, 8):
-                        raise ParseError(schema, f"'{size}' is not a valid integer width")
-                    return nodes.IntegerNode(size, schema[0] != "u")
+            if mo.lastindex == 1:  # bytes
+                if (size := int(mo[1])) not in range(1, 33):
+                    raise ParseError(schema, f"'{size}' is not a valid byte array width")
+                return nodes.BytesNode(size)
+            elif mo.lastindex == 3:  # fixed
+                if (size := int(mo[2])) not in range(8, 264, 8):
+                    raise ParseError(schema, f"'{size}' is not a valid fixed point width")
+                elif (precision := int(mo[3])) not in range(81):
+                    raise ParseError(schema, f"'{precision}' is not a valid fixed point precision")
+                return nodes.FixedNode(size, precision, schema[0] != "u")
+            else:  # integer
+                if (size := int(mo[4])) not in range(8, 264, 8):
+                    raise ParseError(schema, f"'{size}' is not a valid integer width")
+                return nodes.IntegerNode(size, schema[0] != "u")
 
         # array
         elif (mo := cls.ARRAY_PATTERN.fullmatch(schema)) is not None:
@@ -101,15 +97,14 @@ class Parser:
             components, compstr = [], schema[1:-1]
             depth, lastpos = 0, 0  # keep track of nested tuples
             for mo in re.finditer(r"\(|\)|,", compstr):
-                match mo[0]:
-                    case "(":  # tuple start
-                        depth += 1
-                    case ")":  # tuple end
-                        depth -= 1
-                    case _ if depth == 0:  # component separator
-                        # append the component substring from lastpos up to the comma
-                        components.append(compstr[lastpos : mo.start()])
-                        lastpos = mo.end()  # set lastpos after the comma
+                if mo[0] == "(":  # tuple start
+                    depth += 1
+                elif mo[0] == ")":  # tuple end
+                    depth -= 1
+                elif depth == 0:  # component separator
+                    # append the component substring from lastpos up to the comma
+                    components.append(compstr[lastpos : mo.start()])
+                    lastpos = mo.end()  # set lastpos after the comma
 
             # append the remaining component after the last comma
             components.append(compstr[lastpos:])
