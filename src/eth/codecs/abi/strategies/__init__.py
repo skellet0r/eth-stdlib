@@ -23,11 +23,14 @@ def value(draw: st.DrawFn, schema: str) -> Any:
 
 
 @st.composite
-def schema_and_value(draw: st.DrawFn) -> tuple[str, Any]:
+def schema_and_value(draw: st.DrawFn, st_type: st.SearchStrategy | None = None) -> tuple[str, Any]:
     """Generate a valid ABI schema and an encodable value for it.
+
+    Parameters:
+        st_type: An ABI node type search strategy.
 
     Returns:
         A tuple containing the valid ABI type string and the encodable value for the type string.
     """
-    typestr = draw(schema)
+    typestr = draw(schema) if st_type is None else str(draw(st_type))
     return (typestr, draw(value(typestr)))
