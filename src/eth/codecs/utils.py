@@ -1,3 +1,19 @@
+# This file is part of the eth-stdlib library.
+# Copyright (C) 2022 Edward Amor
+#
+# The eth-stdlib library is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# The eth-stdlib library is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with this program. If not, see <https://www.gnu.org/licenses/>.
+
 import string
 from typing import Union
 
@@ -22,8 +38,7 @@ def checksum_encode(addr: Union[str, bytes]) -> str:
     if isinstance(addr, bytes):
         hexval = addr.hex()
     elif isinstance(addr, str):
-        if addr[:2] in ("0x", "0X"):  # pragma: no branch
-            addr = addr[2:]
+        addr = addr[2:] if addr[:2].lower() == "0x" else addr
         hexval = addr.lower()
     else:
         raise TypeError(

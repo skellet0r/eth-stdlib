@@ -30,8 +30,10 @@ def test_encode_bool(value):
 @given(st_value("bytes"))
 def test_encode_bytes(value):
     output = encode("bytes", value)
+    length = len(value)
+    pad_length = length + 32 - (length % 32) if length % 32 else length
 
-    assert output == len(value).to_bytes(32, "big") + value
+    assert output == length.to_bytes(32, "big") + value.ljust(pad_length, b"\x00")
 
 
 @given(st_value("string"))
@@ -40,7 +42,10 @@ def test_encode_string(value):
 
     # string encoding under the hood uses bytes encoding
     value = value.encode()
-    assert output == len(value).to_bytes(32, "big") + value
+    length = len(value)
+    pad_length = length + 32 - (length % 32) if length % 32 else length
+
+    assert output == length.to_bytes(32, "big") + value.ljust(pad_length, b"\x00")
 
 
 @given(st_schema_and_value(st.builds(nodes.BytesNode, st.integers(1, 32))))

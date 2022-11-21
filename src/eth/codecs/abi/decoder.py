@@ -125,11 +125,18 @@ class Decoder:
 
             length, val = int.from_bytes(value[:32], "big"), value[32:]
             if length == 0:
+                if len(val) != 0:
+                    raise DecodeError(
+                        str(node), value, f"Expected 32 bytes, received {len(value)} bytes."
+                    )
                 # length can only be 0 for dynamic arrays, in which case return an empty list
                 return []
-        elif len(value) < node.etype.width * length:
-            # should be equal to the product of the subtype length with the array length
-            raise DecodeError(str(node), value, "Static array value invalid length")
+        elif not node.is_dynamic and len(value) < node.etype.width * length:
+            raise DecodeError(
+                str(node),
+                value,
+                f"Expected {node.etype.width * length} bytes, received {len(value)} bytes.",
+            )
 
         # case 1: static array w/ static elements
         # case 2: dynamic array w/ static elements
@@ -284,9 +291,14 @@ class Decoder:
         Raises:
             DecodeError: If the value can't be decoded.
         """
+        size = sum((elem.width for elem in node.ctypes))
         # value size should be >= the sum of the length of its components
-        if len(value) < sum((elem.width for elem in node.ctypes)):
+        if node.is_dynamic and len(value) < size:
             raise DecodeError(str(node), value, "Value length is less than expected")
+        elif not node.is_dynamic and len(value) != size:
+            raise DecodeError(
+                str(node), value, f"Value length is not the expected size of {size} bytes"
+            )
 
         pos, raw_head = 0, []
         for ctyp in node.ctypes:

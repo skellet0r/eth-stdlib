@@ -63,8 +63,7 @@ class Encoder:
             EncodeError: If the value can't be encoded.
         """
         try:
-            if value[:2] in ("0x", "0X"):  # pragma: no branch
-                value = value[2:]
+            value = value[2:] if value[:2].lower() == "0x" else value
             bval = bytes.fromhex(value)
             assert len(bval) == 20
             return bval.rjust(32, b"\x00")
@@ -190,9 +189,8 @@ class Encoder:
 
         # dyanmic
         if node.is_dynamic:
-            # no padding, null bytes cost extra
-            return length.to_bytes(32, "big") + value
-
+            pad_length = length + 32 - (length % 32) if length % 32 else length
+            return length.to_bytes(32, "big") + value.ljust(pad_length, b"\x00")
         # static - requires padding to occupy a full word length
         return value.rjust(node.size, b"\x00").ljust(32, b"\x00")
 

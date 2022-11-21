@@ -48,11 +48,14 @@ def test_decode_array_raises_for_invalid_value():
     with pytest.raises(DecodeError, match="Dynamic array value has invalid length"):
         decode("uint256[]", b"")
 
-    with pytest.raises(DecodeError, match="Static array value invalid length"):
+    with pytest.raises(DecodeError, match="Expected 32 bytes, received 0 bytes."):
         decode("uint256[1]", b"")
 
     with pytest.raises(DecodeError, match="Invalid array size"):
         decode("uint256[2]", b"\x01" * 65)
+
+    with pytest.raises(DecodeError, match="Expected 32 bytes, received 64 bytes"):
+        decode("uint256[]", b"\x00" * 64)
 
 
 @pytest.mark.parametrize("typestr", ["bytes", "string"])
@@ -74,5 +77,8 @@ def test_decode_integer_and_fixed_raises_for_invalid_value(typestr):
 
 
 def test_decode_tuple_raises_for_invalid_value():
-    with pytest.raises(DecodeError, match="Value length is less than expected"):
+    with pytest.raises(DecodeError, match="expected size of 32 bytes"):
         decode("(uint256)", b"")
+
+    with pytest.raises(DecodeError, match="Value length is less than expected"):
+        decode("(uint256[])", b"")
