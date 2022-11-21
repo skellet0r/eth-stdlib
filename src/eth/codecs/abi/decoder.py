@@ -284,9 +284,14 @@ class Decoder:
         Raises:
             DecodeError: If the value can't be decoded.
         """
+        size = sum((elem.width for elem in node.ctypes))
         # value size should be >= the sum of the length of its components
-        if len(value) < sum((elem.width for elem in node.ctypes)):
+        if node.is_dynamic and len(value) < size:
             raise DecodeError(str(node), value, "Value length is less than expected")
+        elif not node.is_dynamic and len(value) != size:
+            raise DecodeError(
+                str(node), value, f"Value length is not the expected size of {size} bytes"
+            )
 
         pos, raw_head = 0, []
         for ctyp in node.ctypes:
