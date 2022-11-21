@@ -12,9 +12,10 @@ from eth.codecs.abi.parser import Parser
 
 class CLIEncoder(Encoder):
     @classmethod
-    def visit_BytesNode(cls, node: nodes.BytesNode, value: str) -> bytes:
-        value = value[2:] if value[:2].lower() == "0x" else value
-        return super().visit_BytesNode(node, bytes.fromhex(value))
+    def visit_BytesNode(cls, node: nodes.BytesNode, value: Union[str, bytes]) -> bytes:
+        if isinstance(value, str):
+            value = bytes.fromhex(value[2:] if value[:2].lower() == "0x" else value)
+        return super().visit_BytesNode(node, value)
 
     @classmethod
     def visit_FixedNode(cls, node: nodes.FixedNode, value: Union[decimal.Decimal, int]) -> bytes:
