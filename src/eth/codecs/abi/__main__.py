@@ -1,5 +1,17 @@
 import argparse
+import json
 from typing import Sequence
+
+from eth.codecs.abi import nodes
+from eth.codecs.abi.encoder import Encoder
+from eth.codecs.abi.parser import Parser
+
+
+class CLIEncoder(Encoder):
+    @staticmethod
+    def visit_BytesNode(node: nodes.BytesNode, value: str) -> bytes:
+        value = value[2:] if value[:2].lower() == "0x" else value
+        return super().visit_BytesNode(node, bytes.fromhex(value))
 
 
 def decode(schema: str, value: Sequence[str]):
@@ -7,7 +19,9 @@ def decode(schema: str, value: Sequence[str]):
 
 
 def encode(schema: str, value: Sequence[str]):
-    print(schema, value)
+    parsed_schema = Parser.parse(schema)
+    parsed_value = json.loads(" ".join(value)) if value else ()
+    print("0x" + CLIEncoder.encode(parsed_schema, parsed_value).hex())
 
 
 def main():
