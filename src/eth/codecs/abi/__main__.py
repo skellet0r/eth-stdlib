@@ -1,7 +1,7 @@
 import argparse
 import decimal
 import json
-from typing import Sequence, Union
+from typing import Any, Callable, Optional, Sequence, Union
 
 from eth.codecs.abi import nodes
 from eth.codecs.abi.encoder import Encoder
@@ -20,13 +20,20 @@ class CLIEncoder(Encoder):
         return super().visit_FixedNode(node, decimal.Decimal(value))
 
 
+class CLIJSONDecoder(json.JSONDecoder):
+    def decode(self, s: str, _w: Optional[Callable[..., Any]] = None) -> Any:
+        if s.lower()[:2] == "0x":
+            return s
+        super().decode(s)
+
+
 def decode(schema: str, value: Sequence[str]):
     print(schema, value)
 
 
 def encode(schema: str, value: Sequence[str]):
     parsed_schema = Parser.parse(schema)
-    parsed_value = json.loads(" ".join(value), parse_float=decimal.Decimal)
+    parsed_value = json.loads(" ".join(value), parse_float=decimal.Decimal, cls=CLIJSONDecoder)
     print("0x" + CLIEncoder.encode(parsed_schema, parsed_value).hex())
 
 
