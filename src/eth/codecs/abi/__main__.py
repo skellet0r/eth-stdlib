@@ -4,6 +4,7 @@ import json
 from typing import Any, Callable, Optional, Sequence, Union
 
 from eth.codecs.abi import nodes
+from eth.codecs.abi.decoder import Decoder
 from eth.codecs.abi.encoder import Encoder
 from eth.codecs.abi.exceptions import CodecError, ParseError
 from eth.codecs.abi.parser import Parser
@@ -25,8 +26,18 @@ class CLIJSONDecoder(json.JSONDecoder):
         return s if s.lower()[:2] == "0x" else super().decode(s)
 
 
+class CLIJSONEncoder(json.JSONEncoder):
+    def encode(self, o: Any) -> str:
+        if isinstance(o, bytes):
+            return "0x" + o.hex()
+        return super().encode(o)
+
+
 def decode(schema: str, value: Sequence[str]):
-    print(schema, value)
+    parsed_schema = Parser.parse(schema)
+    hexval = "" if not value else value[0]
+    parsed_value = bytes.fromhex(hexval[2:] if hexval[:2].lower() == "0x" else hexval)
+    print(json.dumps(Decoder.decode(parsed_schema, parsed_value), cls=CLIJSONEncoder))
 
 
 def encode(schema: str, value: Sequence[str]):
