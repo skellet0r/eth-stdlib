@@ -117,6 +117,8 @@ class Decoder:
         Raises:
             DecodeError: If the value can't be decoded.
         """
+        # TODO: raise a decoding error if the value provided is not the correct size
+        #   extraneous bytes for example
         length, val = node.length, value
         if node.length is None:
             # dynamic array is atleast 32 bytes
