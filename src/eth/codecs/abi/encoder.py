@@ -189,9 +189,7 @@ class Encoder:
 
         # dyanmic
         if node.is_dynamic:
-            # no padding, null bytes cost extra
-            return length.to_bytes(32, "big") + value
-
+            return length.to_bytes(32, "big") + value.ljust(length + 32 - (length % 32), b"\x00")
         # static - requires padding to occupy a full word length
         return value.rjust(node.size, b"\x00").ljust(32, b"\x00")
 
