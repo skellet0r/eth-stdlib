@@ -1,17 +1,23 @@
 import argparse
+import decimal
 import json
-from typing import Sequence
+from typing import Sequence, Union
 
 from eth.codecs.abi import nodes
 from eth.codecs.abi.encoder import Encoder
+from eth.codecs.abi.exceptions import CodecError, ParseError
 from eth.codecs.abi.parser import Parser
 
 
 class CLIEncoder(Encoder):
-    @staticmethod
-    def visit_BytesNode(node: nodes.BytesNode, value: str) -> bytes:
+    @classmethod
+    def visit_BytesNode(cls, node: nodes.BytesNode, value: str) -> bytes:
         value = value[2:] if value[:2].lower() == "0x" else value
         return super().visit_BytesNode(node, bytes.fromhex(value))
+
+    @classmethod
+    def visit_FixedNode(cls, node: nodes.FixedNode, value: Union[decimal.Decimal, int]) -> bytes:
+        return super().visit_FixedNode(node, decimal.Decimal(value))
 
 
 def decode(schema: str, value: Sequence[str]):
@@ -20,7 +26,7 @@ def decode(schema: str, value: Sequence[str]):
 
 def encode(schema: str, value: Sequence[str]):
     parsed_schema = Parser.parse(schema)
-    parsed_value = json.loads(" ".join(value)) if value else ()
+    parsed_value = json.loads(" ".join(value), parse_float=decimal.Decimal)
     print("0x" + CLIEncoder.encode(parsed_schema, parsed_value).hex())
 
 
@@ -47,7 +53,12 @@ def main():
         )
 
     args = vars(parser.parse_args())
-    args.pop("func", parser.print_help)(**args)
+    try:
+        args.pop("func", parser.print_help)(**args)
+    except json.JSONDecodeError:
+        parser.exit(1, f"{' '.join(args['value'])!r} is not valid JSON.\n")
+    except (CodecError, ParseError) as err:
+        parser.exit(1, f"{err!s}\n")
 
 
 if __name__ == "__main__":
