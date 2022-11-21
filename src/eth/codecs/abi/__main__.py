@@ -65,7 +65,8 @@ def main():
         subparser.add_argument(
             "value",
             nargs=argparse.REMAINDER,
-            help=f"The value to {subparser.prog.split()[-1]}.",
+            help=f"The value to {subparser.prog.split()[-1]}. "
+            "(byte values should be hex encoded, e.g. 0x1122)",
         )
 
     args = vars(parser.parse_args())
