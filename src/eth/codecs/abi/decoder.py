@@ -127,19 +127,16 @@ class Decoder:
             if length == 0:
                 if len(val) != 0:
                     raise DecodeError(
-                        str(node), value, f"Expected 32 bytes, received {len(val)} bytes."
+                        str(node), value, f"Expected 32 bytes, received {len(value)} bytes."
                     )
                 # length can only be 0 for dynamic arrays, in which case return an empty list
                 return []
-        elif not node.is_dynamic and len(value) != node.etype.width * length:
+        elif not node.is_dynamic and len(value) < node.etype.width * length:
             raise DecodeError(
                 str(node),
                 value,
                 f"Expected {node.etype.width * length} bytes, received {len(value)} bytes.",
             )
-        elif len(value) < node.etype.width * length:
-            # should be equal to the product of the subtype length with the array length
-            raise DecodeError(str(node), value, "Static array value invalid length")
 
         # case 1: static array w/ static elements
         # case 2: dynamic array w/ static elements
