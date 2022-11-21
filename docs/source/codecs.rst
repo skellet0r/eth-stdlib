@@ -69,7 +69,7 @@ The :py:mod:`eth.codecs.abi` package provides a simple command line interface fo
 
 .. code-block:: bash
 
-   $ python -m eth.codecs.abi encode '(uint256[2])' '[3, 3]'
+   $ python -m eth.codecs.abi encode '(uint256[2])' '[[3, 3]]'
    0x00000000000000000000000000000000000000000000000000000000000000030000000000000000000000000000000000000000000000000000000000000003
    $ python -m eth.codecs.abi encode string '"Hello World!"'
    0x000000000000000000000000000000000000000000000000000000000000000c48656c6c6f20576f726c6421
