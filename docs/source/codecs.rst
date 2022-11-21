@@ -62,6 +62,22 @@ Hypothesis Strategies
       >>> st_schema_and_value(st_fixed).example()
       ('fixed96x75', Decimal('-1.6503499995656503835410387807E-47'))
 
+Command Line Interface
+^^^^^^^^^^^^^^^^^^^^^^
+
+The :py:mod:`eth.codecs.abi` package provides a simple command line interface for encoding and decoding values.
+
+.. code-block:: bash
+
+   $ python -m eth.codecs.abi encode '(uint256[2])' '[3, 3]'
+   0x00000000000000000000000000000000000000000000000000000000000000030000000000000000000000000000000000000000000000000000000000000003
+   $ python -m eth.codecs.abi encode string '"Hello World!"'
+   0x000000000000000000000000000000000000000000000000000000000000000c48656c6c6f20576f726c6421
+   $ python -m eth.codecs.abi decode bytes4 '0x1232345800000000000000000000000000000000000000000000000000000000'
+   0x12323458
+
+*The value to be encoded/decoded should be quoted as a string to prevent any argument parsing errors.*
+
 Utilities
 ---------
 
