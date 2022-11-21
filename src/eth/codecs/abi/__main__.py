@@ -22,9 +22,7 @@ class CLIEncoder(Encoder):
 
 class CLIJSONDecoder(json.JSONDecoder):
     def decode(self, s: str, _w: Optional[Callable[..., Any]] = None) -> Any:
-        if s.lower()[:2] == "0x":
-            return s
-        super().decode(s)
+        return s if s.lower()[:2] == "0x" else super().decode(s)
 
 
 def decode(schema: str, value: Sequence[str]):
