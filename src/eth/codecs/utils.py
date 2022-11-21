@@ -22,8 +22,7 @@ def checksum_encode(addr: Union[str, bytes]) -> str:
     if isinstance(addr, bytes):
         hexval = addr.hex()
     elif isinstance(addr, str):
-        if addr[:2] in ("0x", "0X"):  # pragma: no branch
-            addr = addr[2:]
+        addr = addr[2:] if addr[:2].lower() == "0x" else addr
         hexval = addr.lower()
     else:
         raise TypeError(

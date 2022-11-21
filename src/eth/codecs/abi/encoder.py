@@ -63,8 +63,7 @@ class Encoder:
             EncodeError: If the value can't be encoded.
         """
         try:
-            if value[:2] in ("0x", "0X"):  # pragma: no branch
-                value = value[2:]
+            value = value[2:] if value[:2].lower() == "0x" else value
             bval = bytes.fromhex(value)
             assert len(bval) == 20
             return bval.rjust(32, b"\x00")
