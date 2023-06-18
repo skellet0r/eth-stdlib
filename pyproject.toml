@@ -20,8 +20,7 @@ packages = [
 
 [tool.poetry.dependencies]
 python = "^3.8"
-pysha3 = {version = "^1.0.0", python = "<3.9"}
-safe-pysha3 = {version = "^1.0.3", python = ">=3.9"}
+pycryptodome = {version = "^3.18.0"}
 hypothesis = {version = "^6.58.0", optional = true}
 
 [tool.poetry.extras]

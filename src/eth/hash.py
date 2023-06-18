@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 
-import sha3
+from Crypto.Hash import keccak
 
 
 def keccak256(data: bytes) -> bytes:
@@ -26,4 +26,6 @@ def keccak256(data: bytes) -> bytes:
     Returns:
         The hash digest.
     """
-    return sha3.keccak_256(data).digest()
+    k = keccak.new(digest_bits=256)
+    k.update(data)
+    return k.digest()
