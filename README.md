@@ -1,6 +1,6 @@
 # The Ethereum Standard Library
 
-[![GitHub](https://img.shields.io/github/license/skellet0r/eth-stdlib)](https://github.com/skellet0r/eth-stdlib/blob/master/COPYING)
+[![GitHub](https://img.shields.io/github/license/skellet0r/eth-stdlib)](./COPYING.LESSER)
 [![Codecov](https://img.shields.io/codecov/c/github/skellet0r/eth-stdlib)](https://app.codecov.io/gh/skellet0r/eth-stdlib)
 [![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/skellet0r/eth-stdlib/test.yaml?label=test%20suite)](https://github.com/skellet0r/eth-stdlib/actions/workflows/test.yaml)
 [![Read the Docs](https://img.shields.io/readthedocs/eth-stdlib)](https://eth-stdlib.readthedocs.io/en/latest/)
@@ -57,3 +57,8 @@ $ poetry run pytest
 ```
 
 After running the test suite, code coverage results will be displayed in the terminal, as well as exported in html format (in the `htmlcov` directory).
+
+
+## Licensing
+This library is released under the [GNU Lesser General Public License version 3](./COPYING.LESSER) or
+(at your option) any later version.
