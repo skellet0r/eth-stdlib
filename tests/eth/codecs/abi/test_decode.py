@@ -25,7 +25,8 @@ def test_decoding(value):
     assert decode(typestr, encode(typestr, val)) == val
 
 
-def test_decoding_tuple_trailing_bytes():
+def test_decode_tuple_trailing_bytes():
+    # should be able to decode a tuple even with trailing bytes
     value = b"\x00" * 33
     assert decode("(uint256)", value) == (0,)
 
