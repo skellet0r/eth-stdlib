@@ -25,6 +25,12 @@ def test_decoding(value):
     assert decode(typestr, encode(typestr, val)) == val
 
 
+def test_decode_tuple_trailing_bytes():
+    # should be able to decode a tuple even with trailing bytes
+    value = b"\x00" * 33
+    assert decode("(uint256)", value) == (0,)
+
+
 def test_decoding_disable_checksum():
     value = b"\x00" * 12 + bytes.fromhex("Cd2a3d9f938e13Cd947eC05ABC7fe734df8DD826")
     assert decode("address", value, checksum=False) == "0xcd2a3d9f938e13cd947ec05abc7fe734df8dd826"
@@ -77,7 +83,7 @@ def test_decode_integer_and_fixed_raises_for_invalid_value(typestr):
 
 
 def test_decode_tuple_raises_for_invalid_value():
-    with pytest.raises(DecodeError, match="expected size of 32 bytes"):
+    with pytest.raises(DecodeError, match="Value length is less than expected"):
         decode("(uint256)", b"")
 
     with pytest.raises(DecodeError, match="Value length is less than expected"):
