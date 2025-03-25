@@ -1,8 +1,8 @@
-[tool.poetry]
+[project]
 name = "eth-stdlib"
 version = "0.2.8"
 description = "Ethereum Standard Library for Python"
-authors = ["Edward Amor <edward.amor3@gmail.com>"]
+authors = [{name = "Edward Amor", email = "edward.amor3@gmail.com"}]
 license = "LGPL-3.0-only"
 readme = "README.md"
 repository = "https://github.com/skellet0r/eth-stdlib"
@@ -17,6 +17,9 @@ classifiers = [
     "Programming Language :: Python :: 3.13",
     "Topic :: Software Development :: Libraries"
 ]
+
+[tool.poetry]
+requires-poetry = ">=2.0"
 packages = [
     { include = "eth", from = "src" },
 ]
